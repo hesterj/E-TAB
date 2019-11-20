@@ -1,0 +1,52 @@
+\contentsline {chapter}{\numberline {1}Introduction}{3}% 
+\contentsline {chapter}{\numberline {2}Getting Started}{4}% 
+\contentsline {chapter}{\numberline {3}Calculus and Proof Procedure}{6}% 
+\contentsline {section}{\numberline {3.1}Calculus}{6}% 
+\contentsline {section}{\numberline {3.2}Preprocessing}{12}% 
+\contentsline {subsubsection}{Axiom Filtering}{12}% 
+\contentsline {subsubsection}{Clausification}{14}% 
+\contentsline {subsubsection}{Equational Definition unfolding}{14}% 
+\contentsline {subsubsection}{Presaturation Interreduction}{14}% 
+\contentsline {section}{\numberline {3.3}Proof Procedure}{15}% 
+\contentsline {subsection}{\numberline {3.3.1}Propositional Reasoning}{15}% 
+\contentsline {chapter}{\numberline {4}Controlling the Proof Search}{17}% 
+\contentsline {section}{\numberline {4.1}Search Control Heuristics}{17}% 
+\contentsline {subsubsection}{Priority functions}{17}% 
+\contentsline {subsubsection}{Generic Weight Functions}{20}% 
+\contentsline {subsubsection}{Clause Evaluation Functions}{21}% 
+\contentsline {subsubsection}{Heuristics}{22}% 
+\contentsline {section}{\numberline {4.2}Term Orderings}{23}% 
+\contentsline {subsubsection}{Precedence Generation Schemes}{25}% 
+\contentsline {subsubsection}{Weight Generation Schemes}{26}% 
+\contentsline {section}{\numberline {4.3}Literal Selection Strategies}{27}% 
+\contentsline {section}{\numberline {4.4}Controling Propositional Reasoning}{28}% 
+\contentsline {section}{\numberline {4.5}The Watchlist Feature}{29}% 
+\contentsline {section}{\numberline {4.6}Learning Clause Evaluation Functions}{30}% 
+\contentsline {subsubsection}{Creating Knowledge Bases}{30}% 
+\contentsline {subsubsection}{Populating Knowledge Bases}{31}% 
+\contentsline {subsubsection}{Using Learned Knowledge}{31}% 
+\contentsline {section}{\numberline {4.7}Other Options}{31}% 
+\contentsline {chapter}{\numberline {5}Input Language}{32}% 
+\contentsline {section}{\numberline {5.1}LOP}{32}% 
+\contentsline {section}{\numberline {5.2}TPTP-2 and TPTP-3 Formats}{33}% 
+\contentsline {section}{\numberline {5.3}Lambda-free higher-order extension}{33}% 
+\contentsline {chapter}{\numberline {6}Output\ldots or how to interpret what you see}{35}% 
+\contentsline {section}{\numberline {6.1}The Bare Essentials}{35}% 
+\contentsline {section}{\numberline {6.2}Observing Saturation}{37}% 
+\contentsline {section}{\numberline {6.3}Inference Protocols}{37}% 
+\contentsline {section}{\numberline {6.4}Proofs Objects}{37}% 
+\contentsline {section}{\numberline {6.5}Answers}{38}% 
+\contentsline {section}{\numberline {6.6}Requesting Specific Output}{39}% 
+\contentsline {chapter}{\numberline {7}Additional utilities}{41}% 
+\contentsline {section}{\numberline {7.1}Common options}{41}% 
+\contentsline {section}{\numberline {7.2}Grounding: \texttt {eground}}{41}% 
+\contentsline {section}{\numberline {7.3}Rewriting: \texttt {enormalizer}}{43}% 
+\contentsline {section}{\numberline {7.4}Multiple queries: \texttt {e\_ltb\_runner}}{43}% 
+\contentsline {subsection}{\numberline {7.4.1}Usage}{44}% 
+\contentsline {subsection}{\numberline {7.4.2}Batch specification file}{44}% 
+\contentsline {subsection}{\numberline {7.4.3}Interactive queries}{46}% 
+\contentsline {section}{\numberline {7.5}Specification pruning: \texttt {e\_axfilter}}{46}% 
+\contentsline {subsection}{\numberline {7.5.1}Filter algorithms}{48}% 
+\contentsline {subsection}{\numberline {7.5.2}Filter specification}{48}% 
+\contentsline {chapter}{\numberline {A}Acknowledgements}{50}% 
+\contentsline {chapter}{\numberline {B}License}{51}% 
