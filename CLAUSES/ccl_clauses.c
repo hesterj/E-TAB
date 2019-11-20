@@ -1367,7 +1367,7 @@ void ClauseTSTPPrint(FILE* out, Clause_p clause, bool fullterms, bool complete)
    TFormula_p form = NULL;
 
    // quantify and print as TFF formula
-   if(!is_untyped && problemType == PROBLEM_FO)
+   if(!is_untyped && problemType == PROBLEM_HO)
    {
       kind = "tcf";
    }

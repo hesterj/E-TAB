@@ -98,6 +98,7 @@ ClauseTableau_p ClauseTableauSaturate(ProofState_p state, ProofControl_p control
 
 ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p control, int max_depth)
 {
+	problemType = PROBLEM_FO;
 	max_depth = 5;
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
    ClauseTableau_p resulting_tab = NULL;

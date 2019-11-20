@@ -287,8 +287,6 @@ void HCBClauseSetEvaluate(HCB_p hcb, ClauseSet_p clauses)
 	}
 }
 
-
-
 /*  Apply subst to the entire tableau
 */
 
@@ -354,6 +352,8 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 {
 	if (a==b) return NULL;  // Easy case...
 	
+	printf("Checking ClauseContradictsClause\n");
+	
 	if (ClauseLiteralNumber(a) != 1 || ClauseLiteralNumber(b) != 1) return NULL; //Only interested in unit contradiction
 	
 	TB_p bank = tab->terms;
@@ -374,6 +374,15 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	b_neg_nnf = TermDerefAlways(b_neg_nnf);
 	
 	subst = SubstAlloc();
+	
+	ClausePrint(GlobalOut, a, true);
+	printf("   ");
+	ClausePrint(GlobalOut, b, true);
+	printf("\n");
+	
+	TFormulaTPTPPrint(GlobalOut, bank, a_tform, true, true);printf("   ");
+	TFormulaTPTPPrint(GlobalOut, bank, b_tform, true, true);printf("\n");
+	
 
 	if (SubstComputeMgu(a_tform, b_neg_nnf, subst))
 	{
@@ -771,21 +780,18 @@ Clause_p ClauseCopyFresh(Clause_p clause)
    PTreeToPStack(variables, variable_tree);
    PTreeFree(variable_tree);
    
-   Type_p individual_type = AllocSimpleSort(2);
-   
    //printf("Number of variables in %ld\n", num_variables);
    
    for (p = 0; p < PStackGetSP(variables); p++)
    {
 	   old_var = PStackElementP(variables, p);
-	   fresh_var = VarBankGetFreshVar(variable_bank, individual_type);  // 2 is individual sort
+	   fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
 	   assert(fresh_var != old_var);
 	   SubstAddBinding(subst, old_var, fresh_var);
    }
    
    handle = ClauseCopy(clause, clause->literals->bank);
    
-   TypeFree(individual_type);
    SubstDelete(subst);
    PStackFree(variables);
 

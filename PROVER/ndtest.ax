@@ -1,0 +1,17 @@
+/*
+%test for building a proof
+
+fof(ax1,axiom, ((![X]:(P(X)&Q(X)))
+=>((![X]:P(X))&(![X]:Q(X))))).
+fof(ax2,axiom,(![X]:(P(X)&Q(X)))).
+
+%contradiction for checking to see unification works
+%fof(goal2,axiom, ~((![X]:(P(X)&Q(X)))
+%=>((![X]:P(X))&(![X]:Q(X))))).
+
+fof(goal3,conjecture, ![X]:(P(X) & Q(X))).
+%fof(goal4, conjecture, ![X]:(P(X)|~P(X))).
+%fof(goal3,negated_conjecture, ![X]:(P(X) | Q(X) | Z(X))).
+*/
+
+fof(i_0_35, negated_conjecture, ?[X7, X8]:~((![X7]:(contains_slb(insert_slb(esk1_0,pair(X7,X8)),X7)=>(esk2_0=X7|pair_in_list(remove_slb(insert_slb(esk1_0,pair(X7,X8)),X7),esk2_0,esk3_0)))<=pair_in_list(insert_slb(esk1_0,pair(X7,X8)),esk2_0,esk3_0)))).

@@ -100,6 +100,7 @@ bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab);
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
 int ClauseTableauAssertCheck(ClauseTableau_p tab);
 
+
 /*  Now for tableau sets...
  * 
  * 
@@ -135,5 +136,6 @@ ClauseTableau_p   TableauMasterSetExtractFirst(TableauSet_p list);
 ClauseTableau_p TableauMasterSetExtractEntry(ClauseTableau_p set);
 void TableauMasterSetFree(TableauSet_p handle);
 void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves);
+
 
 #endif

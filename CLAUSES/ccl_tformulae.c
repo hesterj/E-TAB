@@ -850,7 +850,7 @@ void TFormulaTPTPPrint(FILE* out, TB_p bank, TFormula_p form, bool fullterms, bo
          fputs("![", out);
       }
       TermPrint(out, form->args[0], bank->sig, DEREF_NEVER);
-      if(problemType == PROBLEM_HO || !TypeIsIndividual(form->args[0]->type))
+      if(problemType == PROBLEM_HO && !TypeIsIndividual(form->args[0]->type))  // John changed to &&
       {
          fputs(":", out);
          TypePrintTSTP(out, bank->sig->type_bank, form->args[0]->type);
