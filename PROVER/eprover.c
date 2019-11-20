@@ -31,6 +31,7 @@
 #include <cte_simpletypes.h>
 #include <cco_scheduling.h>
 #include <e_version.h>
+#include <tableauproc.h>
 
 
 /*---------------------------------------------------------------------*/
@@ -466,6 +467,9 @@ int main(int argc, char* argv[])
                                proofstate->freshvars,
                                proofstate->gc_terms);
    }
+   
+   void* tab = ConnectionTableauSaturate(proofstate, NULL, 0);
+   exit(0); // John
 
    if(cnf_size)
    {

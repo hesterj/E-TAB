@@ -89,7 +89,7 @@ ClauseSet_p ClauseSetFlatCopy(TB_p bank, ClauseSet_p set);
 
 Clause_p ClauseCopyFresh(Clause_p clause);
 
-TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form);
+//TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form);
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);
 Subst_p ClauseTableauClosureRule(ClauseTableau_p tab);

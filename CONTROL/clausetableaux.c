@@ -334,7 +334,7 @@ void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst)
 // Side Effects    : Memory operations
 //
 /----------------------------------------------------------------------*/
-
+/*
 TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form)
 {
    if(form->f_code == terms->sig->not_code)
@@ -344,6 +344,7 @@ TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form)
    return TFormulaFCodeAlloc(terms, terms->sig->not_code,
                              form, NULL);
 }
+*/
 
 /*  Checks if clause directly contradicts another, using a most general unifier. 
  *  If so, return true and APPLY THE SUBSTITUTION USED TO THE ENTIRE TABLEAU (!)

@@ -62,7 +62,6 @@ ClauseTableau_p ClauseTableauSaturate(ProofState_p state, ProofControl_p control
    ClauseSetPrint(GlobalOut, tab->active, true);
    //ClauseTableauScoreActive(tab);
    
-	ClauseTableauScoreActive(tab);
    
    while (open_branches->members > 0)
    {
@@ -109,7 +108,7 @@ ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p con
    initial_tab->open_branches = TableauSetAlloc();
    TableauSet_p open_branches = initial_tab->open_branches;
    TableauSetInsert(open_branches, initial_tab);
-   initial_tab->control = control;
+   initial_tab->control = NULL;
    
    assert(state->axioms->members > 0);
    ClauseTableauInitialize(initial_tab, state);
