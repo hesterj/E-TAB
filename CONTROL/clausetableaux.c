@@ -352,7 +352,7 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 {
 	if (a==b) return NULL;  // Easy case...
 	
-	printf("Checking ClauseContradictsClause\n");
+	//printf("Checking ClauseContradictsClause\n");
 	
 	if (ClauseLiteralNumber(a) != 1 || ClauseLiteralNumber(b) != 1) return NULL; //Only interested in unit contradiction
 	
@@ -374,7 +374,7 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	b_neg_nnf = TermDerefAlways(b_neg_nnf);
 	
 	subst = SubstAlloc();
-	
+	/*
 	ClausePrint(GlobalOut, a, true);
 	printf("   ");
 	ClausePrint(GlobalOut, b, true);
@@ -382,7 +382,7 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	
 	TFormulaTPTPPrint(GlobalOut, bank, a_tform, true, true);printf("   ");
 	TFormulaTPTPPrint(GlobalOut, bank, b_tform, true, true);printf("\n");
-	
+	*/
 
 	if (SubstComputeMgu(a_tform, b_neg_nnf, subst))
 	{
@@ -428,14 +428,14 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 		
 		return subst;
 	}
-	
+	/*
 	TBGCMarkTerm(bank, a_tform);
 	TBGCMarkTerm(bank, b_tform);
 	TBGCMarkTerm(bank,a_neg);
 	TBGCMarkTerm(bank,b_neg);
 	TBGCMarkTerm(bank,a_neg_nnf);
 	TBGCMarkTerm(bank,b_neg_nnf);
-	
+	*/
 	SubstDelete(subst);
 	
 	return NULL;

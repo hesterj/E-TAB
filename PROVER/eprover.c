@@ -98,6 +98,8 @@ PStack_p          wfcb_definitions, hcb_definitions;
 char              *sine=NULL;
 pid_t              pid = 0;
 
+int TableauOptions = 0; // John
+
 FunctionProperties free_symb_prop = FPIgnoreProps;
 
 ProblemType problemType  = PROBLEM_NOT_INIT;
@@ -467,9 +469,6 @@ int main(int argc, char* argv[])
                                proofstate->freshvars,
                                proofstate->gc_terms);
    }
-   
-   void* tab = ConnectionTableauSaturate(proofstate, NULL, 0);
-   exit(0); // John
 
    if(cnf_size)
    {
@@ -541,6 +540,22 @@ int main(int argc, char* argv[])
    assert(problemType != PROBLEM_HO || proofcontrol->ocb->type == KBO6);
 #endif
 
+	if (TableauOptions == 1)
+	{
+		void* tab = ConnectionTableauSaturate(proofstate, NULL, 0);
+		{
+			if (tab)
+			{
+				success = EmptyClauseAlloc();
+				
+			}
+			else
+			{
+				exit(0);
+			}
+		}
+	}
+	
    if(!success)
    {
       success = Saturate(proofstate, proofcontrol, step_limit,
@@ -870,6 +885,27 @@ CLState_p process_options(int argc, char* argv[])
    {
       switch(handle->option_code)
       {
+		case OPT_TABLEAU:
+			if (strcmp(arg,"0") == 0)
+			{
+				TableauOptions = 0;
+				break;
+			}
+			else if (strcmp(arg, "1") == 0)
+			{
+				TableauOptions = 1;
+				break;
+			}
+			else if (strcmp(arg, "2") == 0)
+			{
+				TableauOptions = 2;
+				break;
+			}
+			else 
+			{
+				Error("Must provide an argument of 0,1, or 2 for tableau use.", OTHER_ERROR);
+				assert(false);
+			}
       case OPT_VERBOSE:
             Verbose = CLStateGetIntArg(handle, arg);
             break;

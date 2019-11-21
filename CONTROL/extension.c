@@ -200,12 +200,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	TableauSetExtractEntry(parent);
 	parent->open = false;
 	
-	if (parent->open_branches->members == 0)
-	{
-		printf("Closed tableau found in extension rule!\n");
-		ClauseTableauPrint(parent->master);
-		exit(0);
-	}
 	// There is no need to apply the substitution to the tablaeu, it has already been done by copying labels.
 	ClauseSetFreeAnchor(new_leaf_clauses_set); // the members of this set are now labels
 	return parent;
@@ -245,7 +239,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 		{
 			printf("\033[1;31m");
 			printf("Extension step possible! d%da%d\n", open_branch->depth, open_branch->arity);
-			printf("\033[0m;");
+			printf("\033[0m");
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
 																		   subst, 
@@ -255,6 +249,10 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 			ClauseTableauExtensionRule(distinct_tableaux, extension_candidate);
 			TableauExtensionFree(extension_candidate);
 			extensions_done++;
+			if (open_branch->open_branches->members == 0)
+			{
+				return extensions_done;
+			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}
 		leaf_clause = leaf_clause->succ;

@@ -199,6 +199,10 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 				number_of_extensions += ClauseTableauExtensionRuleAttemptOnBranch(open_branch,
 																										distinct_tableaux,
 																										selected);
+				if (open_branch->open_branches->members == 0)
+				{
+					return open_branch->master;
+				}
 				selected = selected->succ;
 			}
 			// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
@@ -209,11 +213,16 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 			}
 			open_branch = open_branch->succ;
 		}
+		if (number_of_extensions == 0)
+		{
+			printf("Could not do any extensions on a tableau.  Deleting it.\n");
+			number_of_extensions = -1; // If there is no extension possible, the tableau is useless.  It will be freed.
+		}
 		next_tableau:
 		printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;
-		if (number_of_extensions > 0)
+		if (number_of_extensions != 0)
 		{
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);

@@ -180,6 +180,7 @@ typedef enum
    OPT_MINISCOPE_LIMIT,
    OPT_PRINT_TYPES,
    OPT_APP_ENCODE,
+   OPT_TABLEAU,
    OPT_DUMMY
 }OptionCodes;
 
@@ -1360,6 +1361,14 @@ OptCell opts[] =
     NoArg, NULL,
     "Encodes terms in the proof state using applicative encoding, "
     "prints encoded input problem and exits."},
+    
+    {OPT_TABLEAU,
+		 '\0', "tableau",
+		 ReqArg, NULL,
+		 "0: Do not attempt creation of any tableaux."
+		 "1: Build a tableau at start of proof search."
+		 "2: Build tableaux during proof search."
+	 },
 
    {OPT_NOOPT,
     '\0', NULL,

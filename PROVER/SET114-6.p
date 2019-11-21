@@ -1,5 +1,5 @@
 %--------------------------------------------------------------------------
-% File     : SET114-6 : TPTP v7.1.0. Bugfixed v2.1.0.
+% File     : SET114-6 : TPTP v7.2.0. Bugfixed v2.1.0.
 % Domain   : Set Theory
 % Problem  : 2nd is unique if x is not an ordered pair of sets, part 1
 % Version  : [Qua92] axioms.
@@ -24,9 +24,12 @@
 % Bugfixes : v2.1.0 - Bugfix in SET004-0.ax.
 %--------------------------------------------------------------------------
 %----Include von Neuman-Bernays-Godel set theory axioms
-include('Axioms/zfc.ax').
+include('Axioms/SET004-0.ax').
 %--------------------------------------------------------------------------
+cnf(prove_unique_1st_and_2nd_in_pair_of_non_sets2_1,negated_conjecture,
+    ( ~ member(ordered_pair(first1(x),second1(x)),cross_product(universal_class,universal_class)) )).
+
 cnf(prove_unique_2nd_in_pair_of_non_sets,negated_conjecture,
-    (  second(X) != X )).
+    (  second(x) != x )).
 
 %--------------------------------------------------------------------------

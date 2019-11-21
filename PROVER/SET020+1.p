@@ -28,13 +28,15 @@
 % Bugfixed : v5.4.0 - Bugfixes to SET005+0 axiom file.
 %--------------------------------------------------------------------------
 %----Include set theory axioms
-include('Axioms/zfc.ax').
+include('Axioms/SET005+0.ax').
 %--------------------------------------------------------------------------
 %----OP7: Uniqueness of 1st and 2nd when X is an ordered pair of sets
 %----All 2 theorems combined
 fof(unique_1st_and_2nd_in_pair_of_sets1,conjecture,
     ( ! [U,V,X] :
-        ( (X = ordered_pair(U,V) )
+        ( ( member(U,universal_class)
+          & member(V,universal_class)
+          & X = ordered_pair(U,V) )
        => ( first(X) = U
           & second(X) = V ) ) )).
 
