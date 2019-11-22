@@ -35,71 +35,10 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 	return NULL;
 }
 
-
-
-
-/*  For reference only.  The program has been changed to not use this method.
- *  Look at ConnectionTableauSaturate
- * 
-*/  
-
-ClauseTableau_p ClauseTableauSaturate(ProofState_p state, ProofControl_p control, int max_depth)
-{
-   ClauseTableau_p tab = ClauseTableauAlloc();
-   int arity;
-   
-   tab->open_branches = TableauSetAlloc();
-   TableauSet_p open_branches = tab->open_branches;
-   TableauSetInsert(open_branches, tab);
-   tab->control = control;
-   
-   assert(state->axioms->members > 0);
-   ClauseTableauInitialize(tab, state);
-   
-   tab->active = ClauseSetCopy(tab->terms, state->axioms);
-   
-   printf("active clauses at start of proof search:\n");
-   ClauseSetPrint(GlobalOut, tab->active, true);
-   //ClauseTableauScoreActive(tab);
-   
-   
-   while (open_branches->members > 0)
-   {
-		ClauseTableau_p active_branch = TableauSetExtractFirst(open_branches);
-		
-		active_branch = ClauseTableauExpansionRule(active_branch);
-		
-		arity = active_branch->arity;
-		assert(arity != 0);
-		
-		printf("Open branches: %ld\n", open_branches->members);
-		for (int i=0; i<arity; i++)
-		{
-			ClauseTableau_p new_branch = active_branch->children[i];
-			assert(active_branch != active_branch->children[i]);
-			if (ClauseTableauClosureRuleWrapper(new_branch))
-			{
-				printf("Contradiction in child.\n");
-				// Good, new branch is closed so we don't have to worry about it.
-			}
-			else
-			{
-				TableauSetInsert(open_branches, new_branch);
-			}
-		}
-	}
-	
-   printf("No more open branches!\n");
-   ClauseSetFree(tab->master->active);
-   ClauseTableauFree(tab->master);
-   
-	return tab;
-}
-
 ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p control, int max_depth)
 {
 	problemType = PROBLEM_FO;
-	max_depth = 5;
+	assert(max_depth);
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
    ClauseTableau_p resulting_tab = NULL;
    //ClauseTableau_p new_tab;
@@ -124,13 +63,24 @@ ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p con
 		start_label = start_label->succ;
 	}
 	
+	ClauseSet_p extension_candidates = ClauseSetCopy(state->terms, initial_tab->active);
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
 	
 	assert(distinct_tableaux);
 	
 	printf("Start rule applications: %ld\n", distinct_tableaux->members);
 	
-	resulting_tab = ConnectionTableauProofSearch(state, control, distinct_tableaux, max_depth);
+	for (int current_depth = 1; current_depth < max_depth; current_depth++)
+	{
+		resulting_tab = ConnectionTableauProofSearch(state, 
+																	control, 
+																	distinct_tableaux, 
+																	extension_candidates, 
+																	current_depth);
+		if (resulting_tab) break;  // Closed tableau found
+	}
+	
+	ClauseSetFree(extension_candidates);
    
    printf("Connection tableau proof search finished.\n");
    
@@ -146,14 +96,17 @@ ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p con
 
 ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p control,
 										     TableauSet_p distinct_tableaux,
+										     ClauseSet_p extension_candidates,
 										     int max_depth)
 {
 	assert(distinct_tableaux);
 	ClauseTableau_p active_tableau = NULL;
 	ClauseTableau_p open_branch = NULL;
 	assert(distinct_tableaux->anchor->master_succ);
+	/*
 	ClauseSet_p extension_candidates = 
 	ClauseSetCopy(distinct_tableaux->anchor->master_succ->terms, distinct_tableaux->anchor->master_succ->active); // These are the clauses that can be split
+	*/
 	printf("Extension candidates: \n");
 	ClauseSetPrint(GlobalOut, extension_candidates, true);
 	printf("\n");
@@ -213,16 +166,11 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 			}
 			open_branch = open_branch->succ;
 		}
-		if (number_of_extensions == 0)
-		{
-			printf("Could not do any extensions on a tableau.  Deleting it.\n");
-			number_of_extensions = -1; // If there is no extension possible, the tableau is useless.  It will be freed.
-		}
 		next_tableau:
 		printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;
-		if (number_of_extensions != 0)
+		if (number_of_extensions > 0)
 		{
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
@@ -235,6 +183,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 		number_of_extensions = 0;
 	}
 	printf("Went through all of the possible tableaux.\n");
-	ClauseSetFree(extension_candidates);
+	
+	//ClauseSetFree(extension_candidates);
 	return NULL;
 }

@@ -73,7 +73,6 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab);
 ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p parent);
 ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent);
 ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p label);
-ClauseTableau_p ClauseTableauExpansionRule(ClauseTableau_p parent);
 void ClauseTableauApplySubstitution(ClauseTableau_p tab, Subst_p subst);
 void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst);
 ClauseSet_p ClauseSetApplySubstitution(TB_p bank, ClauseSet_p set, Subst_p subst);
@@ -87,14 +86,11 @@ void HCBClauseSetEvaluate(HCB_p hcb, ClauseSet_p clauses);
 ClauseSet_p ClauseSetCopy(TB_p bank, ClauseSet_p set);
 ClauseSet_p ClauseSetFlatCopy(TB_p bank, ClauseSet_p set);
 
-Clause_p ClauseCopyFresh(Clause_p clause);
+Clause_p ClauseCopyFresh(Clause_p clause);  // Major memory hog
 
-//TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form);
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);
-Subst_p ClauseTableauClosureRule(ClauseTableau_p tab);
 Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause);
-bool ClauseTableauClosureRuleWrapper(ClauseTableau_p tab);
 bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab);
 
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);

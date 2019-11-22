@@ -181,6 +181,7 @@ typedef enum
    OPT_PRINT_TYPES,
    OPT_APP_ENCODE,
    OPT_TABLEAU,
+   OPT_TABLEAU_DEPTH,
    OPT_DUMMY
 }OptionCodes;
 
@@ -1368,6 +1369,14 @@ OptCell opts[] =
 		 "0: Do not attempt creation of any tableaux."
 		 "1: Build a tableau at start of proof search."
 		 "2: Build tableaux during proof search."
+	 },
+	 {
+		 OPT_TABLEAU_DEPTH,
+		 '\0', "tableau-depth",
+		 OptArg, "2",
+		 "Specify an integer."
+		 "This is the max depth of tableaux used in proof search."
+		 "Default is 2, which will likely not work often."
 	 },
 
    {OPT_NOOPT,

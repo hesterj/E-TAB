@@ -99,6 +99,7 @@ char              *sine=NULL;
 pid_t              pid = 0;
 
 int TableauOptions = 0; // John
+int TableauDepth = 2;
 
 FunctionProperties free_symb_prop = FPIgnoreProps;
 
@@ -542,7 +543,7 @@ int main(int argc, char* argv[])
 
 	if (TableauOptions == 1)
 	{
-		void* tab = ConnectionTableauSaturate(proofstate, NULL, 0);
+		void* tab = ConnectionTableauSaturate(proofstate, NULL, TableauDepth);
 		{
 			if (tab)
 			{
@@ -906,6 +907,10 @@ CLState_p process_options(int argc, char* argv[])
 				Error("Must provide an argument of 0,1, or 2 for tableau use.", OTHER_ERROR);
 				assert(false);
 			}
+		case OPT_TABLEAU_DEPTH:
+				TableauDepth = CLStateGetIntArg(handle, arg);
+				printf("Tableau max depth of %d.\n", TableauDepth);
+				break;
       case OPT_VERBOSE:
             Verbose = CLStateGetIntArg(handle, arg);
             break;

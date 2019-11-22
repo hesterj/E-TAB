@@ -238,7 +238,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch->label))) // stricter extension step
 		{
 			printf("\033[1;31m");
-			printf("Extension step possible! d%da%d\n", open_branch->depth, open_branch->arity);
+			printf("Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
 			printf("\033[0m");
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 

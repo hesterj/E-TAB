@@ -52,7 +52,8 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	
 	assert(handle->depth == 0);
 	
-	handle->active = ClauseSetCopy(bank, tab->active);
+	//handle->active = ClauseSetCopy(bank, tab->active); // Eats memory at an insane rate
+	handle->active == NULL;
 	handle->set = NULL;
 	handle->master_set = NULL;
 	handle->pred = NULL;
@@ -108,7 +109,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	//TB_p bank = tab->terms; //Copy tableau tab
 	
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
-	handle->active = parent->active;
+	handle->active = NULL;
 	handle->info = NULL;
 	handle->open_branches = parent->open_branches;
 	handle->control = parent->control;
@@ -178,7 +179,7 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	parent->open = false; // We only want leaf nodes in the collection of open breanches
 	
-	handle->active = parent->active;
+	handle->active = NULL;
 	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	
@@ -214,7 +215,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	
 	parent->arity += 1;
 	handle->depth = parent->depth + 1;
-	handle->active = parent->active;
+	handle->active = NULL;
 	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	handle->label = label;
@@ -250,11 +251,14 @@ void ClauseTableauFree(ClauseTableau_p trash)
 		ClauseFree(trash->label);
 		trash->label = NULL;
 	}
+	assert(!trash->active);
+	/*
 	if (trash->depth == 0 && trash->active)
 	{
 		ClauseSetFree(trash->active);
 		trash->active = NULL;
 	}
+	*/
 	if (trash->info)
 	{
 		DStrFree(trash->info);
@@ -348,7 +352,7 @@ TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form)
  *  If so, return true and APPLY THE SUBSTITUTION USED TO THE ENTIRE TABLEAU (!)
 */
 
-Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
+Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
 {
 	if (a==b) return NULL;  // Easy case...
 	
@@ -441,6 +445,30 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	return NULL;
 }
 
+Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
+{
+	assert (tab && a && b);
+	if (a==b) return NULL;  // Easy case...
+	if (!ClauseIsUnit(a) || !ClauseIsUnit(b)) return NULL;
+	Eqn_p a_eqn = a->literals;
+	Eqn_p b_eqn = b->literals;
+	TB_p bank = tab->terms;
+	
+	if (EqnIsPositive(a_eqn) && EqnIsPositive(b_eqn)) return NULL;
+	if (EqnIsNegative(a_eqn) && EqnIsNegative(b_eqn)) return NULL;
+	
+	Subst_p subst = SubstAlloc();
+	
+	if (EqnUnify(a_eqn, b_eqn, subst))
+	{
+		return subst;
+	}
+	
+	SubstDelete(subst);
+	
+	return NULL;
+}
+
 ClauseSet_p ClauseSetFlatCopy(TB_p bank, ClauseSet_p set)
 {
 	Clause_p handle, temp;
@@ -502,67 +530,6 @@ Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set
 	return NULL;
 }
 
-ClauseTableau_p ClauseTableauExpansionRule(ClauseTableau_p parent)
-{
-	if (!(parent->open))
-	{
-		// branch is closed, no need to apply expansion rule
-		return parent;
-	}
-	Eqn_p literals, lit;
-	ClauseTableau_p child;
-	Clause_p selected, new_clause, fresh_selected_clause;
-	TB_p bank;
-	bank = parent->terms;
-	ProofControl_p control = parent->control;
-	
-	
-	if (parent->active->members == 0)
-	{
-		assert(parent->recently_active->members > 0);
-		ClauseSetInsertSet(parent->active, parent->recently_active);
-	}
-	
-	selected = ClauseSetExtractFirst(parent->active);
-	
-	printf("Selected clause: ");ClausePrint(GlobalOut, selected, true);printf("\n");
-	fresh_selected_clause = ClauseCopyFresh(selected);  
-	fresh_selected_clause->ident = selected->ident;
-	ClauseFree(selected);
-	selected = fresh_selected_clause;
-	ClauseRecomputeLitCounts(selected);
-	HCBClauseEvaluate(control->hcb, selected);
-	ClauseSetInsert(parent->recently_active, selected);
-	
-	int arity = ClauseLiteralNumber(selected);
-	parent->children = ClauseTableauArgArrayAlloc(arity);
-	parent->arity = arity;
-	
-	// If there is no label, label it... (start rule)
-	if (!(parent->label))
-	{
-		parent->label = ClauseCopy(selected, bank);
-	}
-	/*  Create new clauses from each of the individual literals of the selected clause.    
-	 *  Set these new clauses to the labels of child branches
-	*/
-	literals = EqnListCopy(selected->literals, bank);
-
-	for (int i=0; i<arity; i++)
-	{
-		lit = EqnListExtractFirst(&literals);
-		parent->children[i] = ClauseTableauChildAlloc(parent);
-		child = parent->children[i];
-		new_clause = ClauseAlloc(lit);
-		ClauseRecomputeLitCounts(new_clause);
-		child->label = ClauseCopy(new_clause, bank);
-		ClauseSetInsert(child->passive, new_clause);
-	}
-	
-	EqnListFree(literals);
-	return parent;
-}
-
 /* Should only be called on closed tableau, as in order to collect the leaves, open branches
  *  must be removed from their tableau set.
 */
@@ -599,35 +566,6 @@ void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves)
 	}
 }
 
-/*  If a contradiction is found, return the subst that needs to be applied to the
- *  entire tableau.  Otherwise return NULL
-*/
-
-Subst_p ClauseTableauClosureRule(ClauseTableau_p tab)
-{
-	assert(tab);
-	assert(tab->label);
-	assert(tab->active);
-	Subst_p subst = NULL;
-	
-	if ((subst = ClauseContradictsSet(tab, tab->label, tab->recently_active)))
-	{
-		tab->open = false;
-		return subst;
-	}
-	else if ((subst = ClauseContradictsSet(tab, tab->label, tab->active)))
-	{
-		tab->open = false;
-		return subst;
-	}
-	else if ((subst = ClauseContradictsSet(tab, tab->label, tab->passive)))
-	{
-		tab->open = false;
-		return subst;
-	}
-	return subst;
-}
-
 /*  Checks clause for contradiction against the nodes of tab
  *  Used to avoid allocating tableau children until we know there is a successful extension
  * 
@@ -637,7 +575,6 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 {
 	assert(tab);
 	assert(tab->label);
-	assert(tab->active);
 	Subst_p subst = NULL;
 	Clause_p parent_label;
 	
@@ -645,16 +582,9 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	{
 		return subst;
 	}
-	/*
-	if (subst = ClauseContradictsSet(tab, clause, tab->active))
-	{
-		return subst;
-	}
-	*/
 	while (tab->parent)
 	{
 		parent_label = tab->parent->label;
-		//printf("	parent label: ");ClausePrint(GlobalOut, tab->label, true);printf("\n");
 		if ((subst = ClauseContradictsClause(tab, parent_label, clause)))
 		{
 			return subst;
@@ -664,29 +594,6 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	}
 	
 	return subst;
-}
-
-/*  Wrapper for closure rule that attempts closure rule and applies 
- *  any successfully found substitution to the entire tableau.  Returns true
- *  if a contradiction is found, false otherwise.
- * 
-*/
-
-bool ClauseTableauClosureRuleWrapper(ClauseTableau_p tab)
-{
-	Subst_p subst;
-	if ((subst = ClauseTableauClosureRule(tab)))
-	{
-		if (!PStackGetSP(subst))  // Only subst needed was identity
-		{
-			SubstDelete(subst);
-			return true;
-		}
-		ClauseTableauApplySubstitution(tab, subst);
-		SubstDelete(subst);
-		return true;
-	}
-	return false;
 }
 
 /*  Simple wrapper for branch contradiction testing
