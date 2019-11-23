@@ -15,7 +15,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	handle->depth = 0;
 	handle->arity = 0;
-	handle->active = NULL;
+	handle->unit_axioms = NULL;
 	handle->set = NULL;
 	handle->head_lit = false;
 	handle->id = 0;
@@ -23,6 +23,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->master_set = NULL;
 	handle->active_branch = NULL;
 	handle->pred = NULL;
+	handle->control = NULL;
 	handle->succ = NULL;
 	handle->master_pred = NULL;
 	handle->master_succ = NULL;
@@ -52,8 +53,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	
 	assert(handle->depth == 0);
 	
-	//handle->active = ClauseSetCopy(bank, tab->active); // Eats memory at an insane rate
-	handle->active == NULL;
+	handle->unit_axioms = tab->unit_axioms;
 	handle->set = NULL;
 	handle->master_set = NULL;
 	handle->pred = NULL;
@@ -109,7 +109,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	//TB_p bank = tab->terms; //Copy tableau tab
 	
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
-	handle->active = NULL;
+	handle->unit_axioms = parent->unit_axioms;
 	handle->info = NULL;
 	handle->open_branches = parent->open_branches;
 	handle->control = parent->control;
@@ -123,7 +123,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->master = parent->master;
 	handle->depth = 1+parent->depth;
 	assert(handle->depth > 0);
-	assert(handle->depth = parent->depth + 1);
+	assert((handle->depth = parent->depth + 1));
 	handle->state = parent->state;
 	handle->open = tab->open;
 	handle->arity = tab->arity;
@@ -171,7 +171,6 @@ void ClauseTableauInitialize(ClauseTableau_p handle, ProofState_p initial)
 	handle->signature = initial->signature;
 	handle->state = initial;
 	handle->terms = initial->terms;
-	handle->active = ClauseSetCopy(handle->terms, initial->axioms);
 }
 
 ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
@@ -179,7 +178,7 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	parent->open = false; // We only want leaf nodes in the collection of open breanches
 	
-	handle->active = NULL;
+	handle->unit_axioms = parent->unit_axioms;
 	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	
@@ -215,7 +214,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	
 	parent->arity += 1;
 	handle->depth = parent->depth + 1;
-	handle->active = NULL;
+	handle->unit_axioms = parent->unit_axioms;
 	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	handle->label = label;
@@ -238,6 +237,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->state = parent->state;
 	handle->open = true; // The tableau as alloc'd as NOT OPEN!
 	handle->arity = 0;
+	assert(!handle->set);
 	return handle;
 }
 
@@ -251,14 +251,6 @@ void ClauseTableauFree(ClauseTableau_p trash)
 		ClauseFree(trash->label);
 		trash->label = NULL;
 	}
-	assert(!trash->active);
-	/*
-	if (trash->depth == 0 && trash->active)
-	{
-		ClauseSetFree(trash->active);
-		trash->active = NULL;
-	}
-	*/
 	if (trash->info)
 	{
 		DStrFree(trash->info);
@@ -575,9 +567,25 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 {
 	assert(tab);
 	assert(tab->label);
+	assert(tab->unit_axioms);
 	Subst_p subst = NULL;
 	Clause_p parent_label;
+	// Check against the unit axioms
+	Clause_p unit_handle = tab->unit_axioms->anchor->succ;
+	while (unit_handle != tab->unit_axioms->anchor)
+	{
+		assert(unit_handle);
+		Clause_p fresh_unit = ClauseCopyFresh(unit_handle);
+		if (ClauseContradictsClause(tab, clause, unit_handle))
+		{
+			ClauseFree(fresh_unit);
+			return subst;
+		}
+		ClauseFree(fresh_unit);
+		unit_handle = unit_handle->succ;
+	}
 	
+	// Check against the tableau
 	if ((subst = ClauseContradictsClause(tab, tab->label, clause)))
 	{
 		return subst;

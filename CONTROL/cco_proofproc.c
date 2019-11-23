@@ -23,6 +23,7 @@ Changes
 
 #include "cco_proofproc.h"
 #include <picosat.h>
+#include <tableauproc.h>
 
 
 
@@ -1634,6 +1635,14 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
       {
          break;
       }
+      if (state->tableauoptions > 1)
+      {
+			unsatisfiable = ConnectionTableau(state->terms, state->unprocessed, state->tableaudepth);
+		}
+		if (unsatisfiable)
+		{
+			break;
+		}
       if(control->heuristic_parms.sat_check_grounding != GMNoGrounding)
       {
          if(ProofStateCardinality(state) >= sat_check_size_limit)

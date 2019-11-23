@@ -13,6 +13,50 @@ long dive_depth = 10;
 /*  Function Definitions
 */
 
+/*-----------------------------------------------------------------------
+//
+// Function: ClauseSetMoveNonUnits()
+//
+//   Move all unit-clauses from set to nonunits, return number of
+//   clauses moved.
+//
+// Global Variables: -
+//
+// Side Effects    : -
+//
+/----------------------------------------------------------------------*/
+
+long ClauseSetMoveUnits(ClauseSet_p set, ClauseSet_p units)
+{
+   Clause_p handle;
+
+   assert(set);
+   assert(units);
+   assert(!set->demod_index);
+   assert(!set->demod_index);
+
+   handle = set->anchor->succ;
+   long count = 0;
+   while(handle != set->anchor)
+   {
+		assert(handle);
+      if(ClauseLiteralNumber(handle) == 1)
+      {
+			count++;
+			handle = handle->succ;
+			assert(handle->pred);
+			Clause_p unit = ClauseSetExtractEntry(handle->pred);
+			ClauseSetInsert(units, unit);
+         //ClauseSetMoveClause(units, handle->pred);
+      }
+      else
+      {
+			handle = handle->succ;
+		}
+   }
+   return count;
+}
+
 
 /*  Identify a single negated conjecture to form the tableau branches.
  *  If there is no conjecture return NULL.  
@@ -35,67 +79,7 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 	return NULL;
 }
 
-ClauseTableau_p ConnectionTableauSaturate(ProofState_p state, ProofControl_p control, int max_depth)
-{
-	problemType = PROBLEM_FO;
-	assert(max_depth);
-   ClauseTableau_p initial_tab = ClauseTableauAlloc();
-   ClauseTableau_p resulting_tab = NULL;
-   //ClauseTableau_p new_tab;
-   TableauSet_p distinct_tableaux = TableauMasterSetAlloc();
-   //int arity;
-   
-   initial_tab->open_branches = TableauSetAlloc();
-   TableauSet_p open_branches = initial_tab->open_branches;
-   TableauSetInsert(open_branches, initial_tab);
-   initial_tab->control = NULL;
-   
-   assert(state->axioms->members > 0);
-   ClauseTableauInitialize(initial_tab, state);
-	
-	// Create a tableau for each axiom using the start rule
-   Clause_p start_label = initial_tab->active->anchor->succ;
-   while (start_label != initial_tab->active->anchor)
-   {
-		ClauseTableau_p beginning_tableau = ClauseTableauMasterCopy(initial_tab);
-		TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
-		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
-		start_label = start_label->succ;
-	}
-	
-	ClauseSet_p extension_candidates = ClauseSetCopy(state->terms, initial_tab->active);
-	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
-	
-	assert(distinct_tableaux);
-	
-	printf("Start rule applications: %ld\n", distinct_tableaux->members);
-	
-	for (int current_depth = 1; current_depth < max_depth; current_depth++)
-	{
-		resulting_tab = ConnectionTableauProofSearch(state, 
-																	control, 
-																	distinct_tableaux, 
-																	extension_candidates, 
-																	current_depth);
-		if (resulting_tab) break;  // Closed tableau found
-	}
-	
-	ClauseSetFree(extension_candidates);
-   
-   printf("Connection tableau proof search finished.\n");
-   
-   if (!resulting_tab)
-   {
-	  printf("ConnectionTableauProofSearch returns NULL. Failure.\n");
-   }
-   
-   TableauMasterSetFree(distinct_tableaux);
-   
-	return resulting_tab;
-}
-
-ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p control,
-										     TableauSet_p distinct_tableaux,
+ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 										     ClauseSet_p extension_candidates,
 										     int max_depth)
 {
@@ -129,6 +113,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 		ClauseTableauAssertCheck(active_tableau);
 		open_branch = active_tableau->open_branches->anchor->succ;
 		number_of_extensions = 0;
+		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			number_of_extensions = 0;
@@ -140,7 +125,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 				TableauSetExtractEntry(open_branch->pred);
 				continue;
 			}
-			if (open_branch->depth > max_depth)
+			else if (open_branch->depth > max_depth)
 			{
 				printf("Reached max depth.\n");
 				open_branch = open_branch->succ;
@@ -186,4 +171,76 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p state, ProofControl_p 
 	
 	//ClauseSetFree(extension_candidates);
 	return NULL;
+}
+
+Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
+{
+   problemType = PROBLEM_FO;
+   assert(max_depth);
+   ClauseTableau_p initial_tab = ClauseTableauAlloc();
+   ClauseTableau_p resulting_tab = NULL;
+   TableauSet_p distinct_tableaux = TableauMasterSetAlloc();
+   
+   initial_tab->open_branches = TableauSetAlloc();
+   TableauSet_p open_branches = initial_tab->open_branches;
+   TableauSetInsert(open_branches, initial_tab);
+   
+   ClauseSet_p unit_axioms = ClauseSetAlloc();
+   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
+   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
+   printf("Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
+																										extension_candidates->members,
+																										active->members);
+   assert(number_of_units == unit_axioms->members);
+   
+   initial_tab->terms = bank;
+   initial_tab->signature = NULL;
+   initial_tab->state = NULL;
+   
+   //  Move all of the unit clauses to be on the initial tableau
+   initial_tab->unit_axioms = unit_axioms;
+   
+	
+	// Create a tableau for each axiom using the start rule
+   Clause_p start_label = extension_candidates->anchor->succ;
+   while (start_label != extension_candidates->anchor)
+   {
+		ClauseTableau_p beginning_tableau = ClauseTableauMasterCopy(initial_tab);
+		TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
+		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
+		start_label = start_label->succ;
+	}
+	
+	
+	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
+	
+	assert(distinct_tableaux);
+	
+	printf("Start rule applications: %ld\n", distinct_tableaux->members);
+	
+	for (int current_depth = 1; current_depth < max_depth; current_depth++)
+	{
+		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, 
+													 extension_candidates, 
+													 current_depth);
+		if (resulting_tab) break;  // Closed tableau found
+	}
+	
+	ClauseSetFree(extension_candidates);
+	ClauseSetFree(unit_axioms);
+   
+   printf("Connection tableau proof search finished.\n");
+   
+   if (!resulting_tab)
+   {
+	  printf("ConnectionTableauProofSearch returns NULL. Failure.\n");
+   }
+   
+   TableauMasterSetFree(distinct_tableaux);
+   ClauseTableauFree(resulting_tab->master);
+   if (resulting_tab)
+   {
+		return EmptyClauseAlloc();
+	}
+   else return NULL;
 }

@@ -540,14 +540,16 @@ int main(int argc, char* argv[])
    // if the problem is HO -> we have to use KBO6
    assert(problemType != PROBLEM_HO || proofcontrol->ocb->type == KBO6);
 #endif
-
+	
+	proofstate->tableauoptions = TableauOptions;
+	proofstate->tableaudepth = TableauDepth;
 	if (TableauOptions == 1)
 	{
-		void* tab = ConnectionTableauSaturate(proofstate, NULL, TableauDepth);
+		//void* tab = ConnectionTableauSaturate(proofstate, NULL, TableauDepth);
+		success = ConnectionTableau(proofstate->terms, proofstate->axioms, TableauDepth);
 		{
-			if (tab)
+			if (success)
 			{
-				success = EmptyClauseAlloc();
 				
 			}
 			else

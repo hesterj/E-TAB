@@ -67,6 +67,9 @@ typedef struct proofstatecell
    ClauseSet_p   demods[3];       /* Synonyms for
                                      processed_pos_rules and
                                      processed_pos_eqns */
+   int tableauoptions;
+   int tableaudepth;
+   
    ClauseSet_p   watchlist;
    GlobalIndices wlindices;
    bool          state_is_complete;

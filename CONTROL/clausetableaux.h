@@ -24,7 +24,7 @@ typedef struct clausetableau
 	int depth;
 	
 	Clause_p label;
-	ClauseSet_p active;
+	ClauseSet_p unit_axioms;
 	ClauseSet_p passive;
 	ClauseSet_p recently_active;
 	DStr_p info;

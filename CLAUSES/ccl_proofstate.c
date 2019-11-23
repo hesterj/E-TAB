@@ -167,6 +167,8 @@ ProofState_p ProofStateAlloc(FunctionProperties free_symb_prop)
    handle->watchlist            = ClauseSetAlloc();
    handle->f_archive            = FormulaSetAlloc();
    handle->extract_roots        = PStackAlloc();
+   handle->tableauoptions = 0;
+   handle->tableaudepth = 0;
    GlobalIndicesNull(&(handle->gindices));
    handle->fvi_initialized      = false;
    handle->fvi_cspec            = NULL;

@@ -101,7 +101,7 @@ ClauseSet_p SplitClauseFresh(TB_p bank, Clause_p clause)
 
 /*  Actually does an extension rule application.  head_literal_location is the PStackPointer corresponding of the head clause in 
  * 	new_leaf_clauses.  literal_number is the number of literals in the clause that is being split in the extension rule application.
- *  This method is only called by ClauseTableauExtensionRuleAttempt
+ *  This method is only called by ClauseTableauExtensionRuleAttempt.  If this method is called there is likely a Subst_p active!
 */
 
 ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension)
@@ -128,6 +128,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	ClauseTableau_p parent = tableau_copy->active_branch;
 	if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
 	else parent->id = extension->selected->ident - LONG_MIN;
+	
+	// 
 	
 	Clause_p head_literal_clause = NULL;
 	TB_p bank = parent->terms;
@@ -164,21 +166,11 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 		}
 		else
 		{
-			/*
-			if (ClauseTableauBranchClosureRuleWrapper(parent->children[p]))
-			{
-				parent->children[p]->open = false;
-			}
-			else
-			{
-				TableauSetInsert(parent->open_branches, parent->children[p]);
-				parent->children[p]->open = true;
-			}
-			*/
 			TableauSetInsert(parent->open_branches, parent->children[p]);
 			parent->children[p]->open = true;
 		}
 	}
+	// The work is done- try to close the remaining branches
 	SubstDelete(extension->subst);
 	for (long p = 0; p<number_of_children; p++)
 	{
@@ -191,6 +183,12 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 				child->open = false;
 			}
 		}
+	}
+	
+	if (parent->master->open_branches->members == 0)
+	{
+		printf("Found closed tableau early in extension.\n");
+		exit(0);
 	}
 	
 	assert(number_of_children == parent->arity);
@@ -226,7 +224,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 	while (leaf_clause != new_leaf_clauses->anchor)
 	{
 		assert(open_branch);
-		assert(open_branch != parent->open_branches->anchor);
+		assert(open_branch != open_branch->open_branches->anchor);
 		assert(open_branch->parent);
 		assert(open_branch->label);
 		assert(open_branch->arity == 0);
