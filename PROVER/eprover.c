@@ -543,20 +543,10 @@ int main(int argc, char* argv[])
 	
 	proofstate->tableauoptions = TableauOptions;
 	proofstate->tableaudepth = TableauDepth;
+	srand(time(0));
 	if (TableauOptions == 1)
 	{
-		//void* tab = ConnectionTableauSaturate(proofstate, NULL, TableauDepth);
 		success = ConnectionTableau(proofstate->terms, proofstate->axioms, TableauDepth);
-		{
-			if (success)
-			{
-				
-			}
-			else
-			{
-				exit(0);
-			}
-		}
 	}
 	
    if(!success)

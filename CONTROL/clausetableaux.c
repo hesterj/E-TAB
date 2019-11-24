@@ -576,7 +576,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	{
 		assert(unit_handle);
 		Clause_p fresh_unit = ClauseCopyFresh(unit_handle);
-		if (ClauseContradictsClause(tab, clause, unit_handle))
+		if (subst = ClauseContradictsClause(tab, clause, unit_handle))
 		{
 			ClauseFree(fresh_unit);
 			return subst;

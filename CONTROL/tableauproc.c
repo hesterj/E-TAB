@@ -127,7 +127,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			}
 			else if (open_branch->depth > max_depth)
 			{
-				printf("Reached max depth.\n");
+				//printf("Reached max depth.\n");
 				open_branch = open_branch->succ;
 				continue;
 			}
@@ -146,13 +146,13 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
 			if (number_of_extensions > 0)
 			{
-				printf("Did %d extensions.\n", number_of_extensions);
+				//printf("Did %d extensions.\n", number_of_extensions);
 				goto next_tableau;
 			}
 			open_branch = open_branch->succ;
 		}
 		next_tableau:
-		printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;
 		if (number_of_extensions > 0)
@@ -160,10 +160,10 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
 			ClauseTableauFree(trash);
-			printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
+			//printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
 		}
 		assert(active_tableau);
-		printf("Old number of distinct tableaux: %ld, Now we have: %ld\n",old_number_of_distinct_tableaux, distinct_tableaux->members);
+		//printf("Old number of distinct tableaux: %ld, Now we have: %ld\n",old_number_of_distinct_tableaux, distinct_tableaux->members);
 		old_number_of_distinct_tableaux = distinct_tableaux->members;
 		number_of_extensions = 0;
 	}
@@ -192,6 +192,11 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 																										extension_candidates->members,
 																										active->members);
    assert(number_of_units == unit_axioms->members);
+   
+   if (extension_candidates->members == 0) // No nonunits selected
+   {
+		return NULL;
+	}
    
    initial_tab->terms = bank;
    initial_tab->signature = NULL;
@@ -237,10 +242,10 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    }
    
    TableauMasterSetFree(distinct_tableaux);
-   ClauseTableauFree(resulting_tab->master);
    if (resulting_tab)
    {
-		return EmptyClauseAlloc();
+		Clause_p empty = EmptyClauseAlloc();
+		return empty;
 	}
-   else return NULL;
+   return NULL;
 }

@@ -1637,10 +1637,26 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
       }
       if (state->tableauoptions > 1)
       {
-			unsatisfiable = ConnectionTableau(state->terms, state->unprocessed, state->tableaudepth);
+			ClauseSet_p randomly_selected_from_unprocessed = ClauseSetAlloc();
+			Clause_p rand_handle = state->unprocessed->anchor->succ;
+			while (rand_handle != state->unprocessed->anchor)
+			{
+				bool random_bool = rand() & 1;
+				if (random_bool)
+				{
+					Clause_p copy = ClauseCopy(rand_handle, state->terms);
+					ClauseSetInsert(randomly_selected_from_unprocessed, copy);
+				}
+				if (randomly_selected_from_unprocessed->members > 4) break;
+				rand_handle = rand_handle->succ;
+			}
+			//unsatisfiable = ConnectionTableau(state->terms, state->axioms, state->tableaudepth);
+			unsatisfiable = ConnectionTableau(state->terms, randomly_selected_from_unprocessed, state->tableaudepth);
+			ClauseSetFree(randomly_selected_from_unprocessed);
 		}
 		if (unsatisfiable)
 		{
+			PStackPushP(state->extract_roots, unsatisfiable);
 			break;
 		}
       if(control->heuristic_parms.sat_check_grounding != GMNoGrounding)
