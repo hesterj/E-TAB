@@ -547,6 +547,10 @@ int main(int argc, char* argv[])
 	if (TableauOptions == 1)
 	{
 		success = ConnectionTableau(proofstate->terms, proofstate->axioms, TableauDepth);
+		if (success)
+		{
+			PStackPushP(proofstate->extract_roots, EmptyClauseAlloc());
+		}
 	}
 	
    if(!success)
@@ -786,7 +790,7 @@ int main(int argc, char* argv[])
            ProofStateStorage(proofstate));
    MemFreeListPrint(GlobalOut);
 #endif
-   ProofControlFree(proofcontrol);
+	ProofControlFree(proofcontrol);
 #endif
 cleanup1:
 #ifndef FAST_EXIT

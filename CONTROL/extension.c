@@ -99,6 +99,62 @@ ClauseSet_p SplitClauseFresh(TB_p bank, Clause_p clause)
 	return set;
 }
 
+// Attempt to unify the literal with the nodes on the branch above.
+// If one can be unified, the expansion would no longer be regular.
+
+bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
+{
+	Clause_p label = branch->label;
+	Eqn_p node_literal = label->literals;
+	ClauseTableau_p node = branch;
+	Subst_p subst = SubstAlloc();
+	while (node)
+	{
+		label = node->label;
+		node_literal = label->literals;
+		if (EqnIsPositive(literal) && EqnIsNegative(node_literal)) 
+		{
+			SubstBacktrack(subst);
+			node = node->parent;
+			continue;
+		}
+		else if (EqnIsNegative(literal) && EqnIsPositive(node_literal))
+		{
+			SubstBacktrack(subst);
+			node = node->parent;
+			continue;
+		}
+		else if (EqnUnify(literal, node_literal, subst))
+		{
+			if (SubstIsRenaming(subst))
+			{
+				SubstDelete(subst);
+				return true;
+			}
+		}
+		SubstBacktrack(subst);
+		node = node->parent;
+	}
+	SubstDelete(subst);
+	return false;
+}
+
+// Check to see if the literals of clause occur in the branch already.
+
+bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
+{
+	for (Eqn_p lit = clause->literals; lit; lit = lit->next)
+	{
+		if (ClauseTableauBranchContainsLiteral(branch, lit))
+		{
+			//printf("Irregular extension: ");ClausePrint(GlobalOut, clause, true);printf("\n");
+			//ClauseTableauPrintBranch(branch);
+			return false;
+		}
+	}
+	return true;
+}
+
 /*  Actually does an extension rule application.  head_literal_location is the PStackPointer corresponding of the head clause in 
  * 	new_leaf_clauses.  literal_number is the number of literals in the clause that is being split in the extension rule application.
  *  This method is only called by ClauseTableauExtensionRuleAttempt.  If this method is called there is likely a Subst_p active!
@@ -121,8 +177,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(tableau_copy->master == tableau_copy);
 	assert(extension->selected);
 	
-	TableauMasterSetInsert(distinct_tableaux, tableau_copy);
-	
 	// Do the extension rule on the active branch of the newly created tableau
 	
 	ClauseTableau_p parent = tableau_copy->active_branch;
@@ -133,6 +187,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	
 	Clause_p head_literal_clause = NULL;
 	TB_p bank = parent->terms;
+	bool regular = true;
 	ClauseSet_p new_leaf_clauses_set = ClauseSetAlloc(); // Copy the clauses of the extension
 	for (Clause_p handle = extension->other_clauses->anchor->succ;
 					  handle != extension->other_clauses->anchor;
@@ -157,6 +212,10 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	for (long p=0; p < number_of_children; p++)
 	{
 		leaf_clause = ClauseSetExtractFirst(new_leaf_clauses_set);
+		if (ClauseTableauBranchContainsLiteral(parent, leaf_clause->literals))
+		{
+			regular = false;
+		}
 		assert(leaf_clause);
 		parent->children[p] = ClauseTableauChildLabelAlloc(parent, leaf_clause);
 		if (leaf_clause == head_literal_clause)
@@ -170,6 +229,21 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			parent->children[p]->open = true;
 		}
 	}
+	//  If this tableau is irregular, we to undo all of the work.
+	if (!regular)
+	{
+		printf("Irregular extension!\n");
+		ClauseSetFreeAnchor(new_leaf_clauses_set);
+		ClauseTableauFree(parent->master);
+		SubstDelete(extension->subst);
+		return NULL;
+	}
+	else
+	{
+		TableauMasterSetInsert(distinct_tableaux, parent->master);
+	}
+
+	
 	// The work is done- try to close the remaining branches
 	SubstDelete(extension->subst);
 	for (long p = 0; p<number_of_children; p++)
@@ -215,6 +289,14 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 															 Clause_p selected)
 {
 	int extensions_done = 0;
+	/*
+	if (!ClauseTableauExtensionIsRegular(open_branch, selected))
+	{
+		printf("Extension is not regular!!!\n");
+		return 0;
+	}
+	*/
+	
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, selected);
 	//ClauseTableau_p parent = open_branch->parent;
 	Subst_p subst = NULL;
@@ -244,12 +326,17 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 																		   head_clause, 
 																		   new_leaf_clauses, 
 																		   open_branch);
-			ClauseTableauExtensionRule(distinct_tableaux, extension_candidate);
+			ClauseTableau_p maybe_extended = ClauseTableauExtensionRule(distinct_tableaux, extension_candidate);
 			TableauExtensionFree(extension_candidate);
-			extensions_done++;
-			if (open_branch->open_branches->members == 0)
+			if (maybe_extended)
 			{
-				return extensions_done;
+				extensions_done++;
+				if (maybe_extended->open_branches->members == 0)
+				{
+					printf("Closed tableau found!\n");
+					exit(0);
+					return extensions_done;
+				}
 			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}

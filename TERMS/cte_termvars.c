@@ -162,7 +162,6 @@ void VarBankFree(VarBank_p junk)
    Term_p var;
 
    assert(junk);
-   StrTreeFree(junk->ext_index);
    PStackFree(junk->env);
 
    for(i=0; i<PDArraySize(junk->varstacks); i++)

@@ -195,6 +195,10 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    
    if (extension_candidates->members == 0) // No nonunits selected
    {
+		ClauseSetFree(unit_axioms);
+		ClauseSetFree(extension_candidates);
+		TableauMasterSetFree(distinct_tableaux);
+		ClauseTableauFree(initial_tab);
 		return NULL;
 	}
    
