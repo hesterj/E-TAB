@@ -608,7 +608,9 @@ int main(int argc, char* argv[])
       {
          if(neg_conjectures)
          {
-            TSTPOUT(GlobalOut, deriv->has_conjecture?"Theorem":"ContradictoryAxioms");
+				// John changed this
+            //TSTPOUT(GlobalOut, deriv->has_conjecture?"Theorem":"ContradictoryAxioms");
+            TSTPOUT(GlobalOut, "Theorem");
          }
          else
          {

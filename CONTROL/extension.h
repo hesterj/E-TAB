@@ -18,6 +18,19 @@ typedef struct tableau_extension_cell
 	struct tableau_extension_cell* succ;  // for singly linked lists of the extension steps
 }TableauExtension, *TableauExtension_p;
 
+typedef struct tableaucontrol_cell
+{
+	int number_of_extensions;
+	ClauseTableau_p closed_tableau;
+	TB_p terms;
+}TableauControlCell, *TableauControl_p;
+
+#define TableauControlCellAlloc()    (TableauControlCell*)SizeMalloc(sizeof(TableauControlCell))
+#define TableauControlCellFree(junk) SizeFree(junk, sizeof(TableauControlCell))
+
+TableauControl_p TableauControlAlloc();
+void TableauControlFree(TableauControl_p trash);
+
 void ClauseSetFreeAnchor(ClauseSet_p junk);
 ClauseSet_p ClauseStackToClauseSet(ClauseStack_p stack);
 
@@ -28,8 +41,10 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause);
 #define TableauExtensionCellAlloc() (TableauExtension*)SizeMalloc(sizeof(TableauExtension))
 #define TableauExtensionCellFree(junk) SizeFree(junk, sizeof(TableauExtension))
 
-int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch, TableauSet_p distinct_tableaux,
-																	 Clause_p selected);
+int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
+															 ClauseTableau_p open_branch, 
+															 TableauSet_p distinct_tableaux,
+															 Clause_p selected);
 ClauseSet_p SplitClauseFresh(TB_p bank, Clause_p clause); // Major memory eating offender
 TableauExtension_p ClauseTableauCreateExtensionJobs(ClauseTableau_p open_branch, Clause_p selected);
 ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension);

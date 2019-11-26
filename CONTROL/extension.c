@@ -29,6 +29,20 @@ void TableauExtensionFree(TableauExtension_p ext)
 	TableauExtensionCellFree(ext);
 }
 
+TableauControl_p TableauControlAlloc()
+{
+	TableauControl_p handle = TableauControlCellAlloc();
+	handle->terms = NULL;
+	handle->number_of_extensions = 0;
+	handle->closed_tableau = NULL;
+	return handle;
+}
+
+void TableauControlFree(TableauControl_p trash)
+{
+	TableauControlCellFree(trash);
+}
+
 ClauseSet_p ClauseStackToClauseSet(ClauseStack_p stack)
 {
 	PStackPointer number_of_clauses = PStackGetSP(stack);
@@ -232,7 +246,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	//  If this tableau is irregular, we to undo all of the work.
 	if (!regular)
 	{
-		printf("Irregular extension!\n");
+		//printf("# Irregular extension!\n");
 		ClauseSetFreeAnchor(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
 		SubstDelete(extension->subst);
@@ -258,13 +272,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			}
 		}
 	}
-	
-	if (parent->master->open_branches->members == 0)
-	{
-		printf("Found closed tableau early in extension.\n");
-		exit(0);
-	}
-	
 	assert(number_of_children == parent->arity);
 	assert(parent->set);
 	assert(parent->open);
@@ -284,18 +291,12 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
  *  distinct_tableaux.
 */
 
-int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch, 
+int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
+															 ClauseTableau_p open_branch, 
 															 TableauSet_p distinct_tableaux,
 															 Clause_p selected)
 {
 	int extensions_done = 0;
-	/*
-	if (!ClauseTableauExtensionIsRegular(open_branch, selected))
-	{
-		printf("Extension is not regular!!!\n");
-		return 0;
-	}
-	*/
 	
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, selected);
 	//ClauseTableau_p parent = open_branch->parent;
@@ -317,9 +318,9 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch->label))) // stricter extension step
 		{
-			printf("\033[1;31m");
-			printf("Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
-			printf("\033[0m");
+			//printf("\033[1;31m");
+			//printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
+			//printf("\033[0m");
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
 																		   subst, 
@@ -333,8 +334,8 @@ int ClauseTableauExtensionRuleAttemptOnBranch(ClauseTableau_p open_branch,
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{
-					printf("Closed tableau found!\n");
-					exit(0);
+					printf("# Closed tableau found!\n");
+					control->closed_tableau = maybe_extended->master;
 					return extensions_done;
 				}
 			}

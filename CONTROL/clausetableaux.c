@@ -370,31 +370,14 @@ Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	b_neg_nnf = TermDerefAlways(b_neg_nnf);
 	
 	subst = SubstAlloc();
-	/*
-	ClausePrint(GlobalOut, a, true);
-	printf("   ");
-	ClausePrint(GlobalOut, b, true);
-	printf("\n");
-	
-	TFormulaTPTPPrint(GlobalOut, bank, a_tform, true, true);printf("   ");
-	TFormulaTPTPPrint(GlobalOut, bank, b_tform, true, true);printf("\n");
-	*/
 
 	if (SubstComputeMgu(a_tform, b_neg_nnf, subst))
 	{
-		printf("Contradiction: ");
+		printf("# Contradiction: ");
 		ClausePrint(GlobalOut, a, true);
 		printf("   ");
 		ClausePrint(GlobalOut, b, true);
 		printf("\n");
-		/*
-		TBGCMarkTerm(bank, a_tform);
-		TBGCMarkTerm(bank, b_tform);
-		TBGCMarkTerm(bank,a_neg);
-		TBGCMarkTerm(bank,b_neg);
-		TBGCMarkTerm(bank,a_neg_nnf);
-		TBGCMarkTerm(bank,b_neg_nnf);
-		*/
 		if (!PStackGetSP(subst))
 		{
 			return subst;
@@ -404,7 +387,7 @@ Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	}
 	else if (SubstComputeMgu(b_tform, a_neg_nnf, subst))
 	{
-		printf("Contradiction: ");
+		printf("# Contradiction: ");
 		ClausePrint(GlobalOut, a, true);
 		printf("   ");
 		ClausePrint(GlobalOut, b, true);
@@ -444,7 +427,7 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	if (!ClauseIsUnit(a) || !ClauseIsUnit(b)) return NULL;
 	Eqn_p a_eqn = a->literals;
 	Eqn_p b_eqn = b->literals;
-	TB_p bank = tab->terms;
+	//TB_p bank = tab->terms;
 	
 	if (EqnIsPositive(a_eqn) && EqnIsPositive(b_eqn)) return NULL;
 	if (EqnIsNegative(a_eqn) && EqnIsNegative(b_eqn)) return NULL;
@@ -531,14 +514,14 @@ void ClauseTableauPrint(ClauseTableau_p tab)
 	TableauSet_p leaves = TableauSetAlloc();
 	ClauseTableauCollectLeaves(tab, leaves);
 	ClauseTableau_p handle = leaves->anchor->succ;
-	printf("Printing the branches of the tableau:\n");
+	printf("# Printing the branches of the tableau:\n");
 	while ((handle = TableauSetExtractFirst(leaves)))
 	{
 		ClauseTableauPrintBranch(handle);printf("\n");
 	}
 	assert(leaves->members == 0);
 	TableauSetFree(leaves);
-	printf("\nDone.\n");
+	printf("\n# Done.\n");
 }
 
 /*  Only call on closed tableau.  Collects the leaves (no children nodes).
@@ -576,7 +559,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	{
 		assert(unit_handle);
 		Clause_p fresh_unit = ClauseCopyFresh(unit_handle);
-		if (subst = ClauseContradictsClause(tab, clause, unit_handle))
+		if ((subst = ClauseContradictsClause(tab, clause, unit_handle)))
 		{
 			ClauseFree(fresh_unit);
 			return subst;

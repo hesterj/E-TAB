@@ -91,20 +91,21 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	ClauseSet_p extension_candidates = 
 	ClauseSetCopy(distinct_tableaux->anchor->master_succ->terms, distinct_tableaux->anchor->master_succ->active); // These are the clauses that can be split
 	*/
-	printf("Extension candidates: \n");
+	printf("# Extension candidates: \n");
 	ClauseSetPrint(GlobalOut, extension_candidates, true);
 	printf("\n");
 	int number_of_extensions = 0;
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
+	TableauControl_p control = TableauControlAlloc();
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		printf("Number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (active_tableau->open_branches->members == 0)
 		{
-			printf("Closed tableau found!\n");
+			printf("# Closed tableau found!\n");
 			ClauseTableauPrint(active_tableau);
 			return active_tableau;
 		}
@@ -119,7 +120,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			number_of_extensions = 0;
 			if (ClauseTableauBranchClosureRuleWrapper(open_branch))
 			{
-				printf("Branch closed with closure rule.\n");
+				printf("# Branch closed with closure rule.\n");
 				open_branch->open = false;
 				open_branch = open_branch->succ;
 				TableauSetExtractEntry(open_branch->pred);
@@ -134,12 +135,20 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			Clause_p selected = extension_candidates->anchor->succ;
 			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
 			{
-				number_of_extensions += ClauseTableauExtensionRuleAttemptOnBranch(open_branch,
+				number_of_extensions += ClauseTableauExtensionRuleAttemptOnBranch(control,
+																										open_branch,
 																										distinct_tableaux,
 																										selected);
+				/*																						
 				if (open_branch->open_branches->members == 0)
 				{
 					return open_branch->master;
+				}
+				*/
+				if (control->closed_tableau)
+				{
+					ClauseTableauPrint(control->closed_tableau);
+					return control->closed_tableau;
 				}
 				selected = selected->succ;
 			}
@@ -167,7 +176,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		old_number_of_distinct_tableaux = distinct_tableaux->members;
 		number_of_extensions = 0;
 	}
-	printf("Went through all of the possible tableaux.\n");
+	printf("# Went through all of the possible tableaux.\n");
 	
 	//ClauseSetFree(extension_candidates);
 	return NULL;
@@ -188,7 +197,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    ClauseSet_p unit_axioms = ClauseSetAlloc();
    ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
    long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
-   printf("Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
+   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
 																										extension_candidates->members,
 																										active->members);
    assert(number_of_units == unit_axioms->members);
@@ -225,7 +234,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	
 	assert(distinct_tableaux);
 	
-	printf("Start rule applications: %ld\n", distinct_tableaux->members);
+	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
 	
 	for (int current_depth = 1; current_depth < max_depth; current_depth++)
 	{
@@ -238,11 +247,11 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	ClauseSetFree(extension_candidates);
 	ClauseSetFree(unit_axioms);
    
-   printf("Connection tableau proof search finished.\n");
+   printf("# Connection tableau proof search finished.\n");
    
    if (!resulting_tab)
    {
-	  printf("ConnectionTableauProofSearch returns NULL. Failure.\n");
+	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
    }
    
    TableauMasterSetFree(distinct_tableaux);
