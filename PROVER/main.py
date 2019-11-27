@@ -10,20 +10,22 @@ from multiprocessing.pool import ThreadPool as Pool
 def proof_search(name):
 	print("Next attempt: "+ name)
 	output_file = 'output/' + name
-	job = "SET/" + name
-	"""
+	job = "FEQCASC27/" + name
+	
 	command = ["./etab",
 				  "--tableau=1",
 				  "--tableau-depth=4",
 				  "--output-file=" + output_file,
 				  "--memory-limit=8000",
 				  job]
+
 	"""
 	command = ["./vanilla",
 				  "--auto",
 				  "--output-file=" + output_file,
 				  "--cpu-limit=30",
 				  job]
+	"""
 	temp = ' '.join(command)
 		
 	print(temp)
@@ -86,11 +88,11 @@ folders = []
 successes = []
 errors = []
 failures = []
-runname = 'runvanilla'
+runname = 'etabcasc27'
 cpulimit = 0
 temp_filenames = []
 
-for f in os.listdir("SET"):
+for f in os.listdir("FEQCASC27"):
 	temp_filenames.append(f)
 
 
@@ -115,3 +117,5 @@ for prob in temp_filenames:
 	proof_search(prob)
 	
 run_output(runname)
+shutil.rmtree('output')
+os.mkdir('output')
