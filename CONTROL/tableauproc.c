@@ -98,6 +98,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
+	long MAX_TABLEAUX = 100000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
@@ -150,6 +151,10 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 					ClauseTableauPrint(control->closed_tableau);
 					return control->closed_tableau;
 				}
+				if (distinct_tableaux->members > MAX_TABLEAUX)
+				{
+					return NULL;
+				}
 				selected = selected->succ;
 			}
 			// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
@@ -188,7 +193,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    assert(max_depth);
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
    ClauseTableau_p resulting_tab = NULL;
-   TableauSet_p distinct_tableaux = TableauMasterSetAlloc();
+   TableauSet_p starting_tableaux = TableauMasterSetAlloc();
    
    initial_tab->open_branches = TableauSetAlloc();
    TableauSet_p open_branches = initial_tab->open_branches;
@@ -206,7 +211,6 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    {
 		ClauseSetFree(unit_axioms);
 		ClauseSetFree(extension_candidates);
-		TableauMasterSetFree(distinct_tableaux);
 		ClauseTableauFree(initial_tab);
 		return NULL;
 	}
@@ -218,13 +222,13 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    //  Move all of the unit clauses to be on the initial tableau
    initial_tab->unit_axioms = unit_axioms;
    
-	
+	ClauseTableau_p beginning_tableau = NULL;
 	// Create a tableau for each axiom using the start rule
    Clause_p start_label = extension_candidates->anchor->succ;
    while (start_label != extension_candidates->anchor)
    {
-		ClauseTableau_p beginning_tableau = ClauseTableauMasterCopy(initial_tab);
-		TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
+		beginning_tableau = ClauseTableauMasterCopy(initial_tab);
+		TableauMasterSetInsert(starting_tableaux, beginning_tableau);
 		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
 		start_label = start_label->succ;
 	}
@@ -234,14 +238,28 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	
 	assert(distinct_tableaux);
 	
-	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
+	printf("# Start rule applications: %ld\n", starting_tableaux->members);
 	
+	TableauSet_p distinct_tableaux = NULL;
+	restart:
+	distinct_tableaux = TableauMasterSetAlloc();
+	beginning_tableau = TableauMasterSetExtractFirst(starting_tableaux);
+	TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
+	assert(distinct_tableaux->members == 1);
 	for (int current_depth = 1; current_depth < max_depth; current_depth++)
 	{
 		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, 
 													 extension_candidates, 
 													 current_depth);
 		if (resulting_tab) break;  // Closed tableau found
+	}
+	if (!resulting_tab)
+	{
+		TableauMasterSetFree(distinct_tableaux);
+		if (starting_tableaux->members > 0)
+		{
+			goto restart;
+		}
 	}
 	
 	ClauseSetFree(extension_candidates);
