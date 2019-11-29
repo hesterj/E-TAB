@@ -715,6 +715,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	TableauSetExtractEntry(tab); // no longer open
 	assert(tab->open_branches->members == 0);
 	tab->label = ClauseCopy(start, bank);
+	ClauseGCMarkTerms(tab->label);
 	assert(tab->label);
 	
 	if (tab->label->ident >= 0) tab->id = tab->label->ident;
@@ -732,6 +733,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 		new_clause = ClauseAlloc(lit);
 		ClauseRecomputeLitCounts(new_clause);
 		child->label = new_clause;
+		ClauseGCMarkTerms(child->label); // Do not delete clauses that are labels we could use
 		assert(child->label);
 		TableauSetInsert(child->open_branches, child);
 	}

@@ -98,7 +98,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 100000;
+	long MAX_TABLEAUX = 20000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
@@ -207,6 +207,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 																										active->members);
    assert(number_of_units == unit_axioms->members);
    
+   
    if (extension_candidates->members == 0) // No nonunits selected
    {
 		ClauseSetFree(unit_axioms);
@@ -236,13 +237,16 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
 	
-	assert(distinct_tableaux);
 	
 	printf("# Start rule applications: %ld\n", starting_tableaux->members);
 	
 	TableauSet_p distinct_tableaux = NULL;
 	restart:
+	ClauseSetGCMarkTerms(extension_candidates);
+	ClauseSetGCMarkTerms(unit_axioms);
 	distinct_tableaux = TableauMasterSetAlloc();
+	assert(distinct_tableaux);
+	assert(extension_candidates->anchor->succ);
 	beginning_tableau = TableauMasterSetExtractFirst(starting_tableaux);
 	TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
 	assert(distinct_tableaux->members == 1);
@@ -258,6 +262,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 		TableauMasterSetFree(distinct_tableaux);
 		if (starting_tableaux->members > 0)
 		{
+			TBGCSweep(bank);
 			goto restart;
 		}
 	}
