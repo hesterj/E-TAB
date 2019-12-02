@@ -19,6 +19,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->set = NULL;
 	handle->head_lit = false;
 	handle->id = 0;
+	handle->max_var = 0;
 	handle->info = NULL;
 	handle->master_set = NULL;
 	handle->active_branch = NULL;
@@ -53,7 +54,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	
 	assert(handle->depth == 0);
 	
-	handle->unit_axioms = tab->unit_axioms;
+	handle->unit_axioms = ClauseSetCopy(bank, tab->unit_axioms);
 	handle->set = NULL;
 	handle->master_set = NULL;
 	handle->pred = NULL;
@@ -63,6 +64,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->master_pred = NULL;
 	handle->master_succ = NULL;
 	handle->active_branch = NULL;
+	handle->max_var = tab->max_var;
 	handle->open_branches = TableauSetAlloc();
 	handle->terms = tab->terms;
 	handle->control = tab->control;
@@ -116,6 +118,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->set = NULL;
 	handle->id = tab->id;
 	handle->head_lit = tab->head_lit;
+	handle->max_var = parent->max_var;
 	handle->active_branch = NULL;
 	handle->signature = parent->signature;
 	handle->terms = parent->terms;
@@ -185,6 +188,7 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	handle->depth = parent->depth + 1;
 	handle->control = parent->control;
 	handle->label = NULL;
+	handle->max_var = parent->max_var;
 	handle->info = NULL;
 	handle->active_branch = NULL;
 	handle->set = NULL;
@@ -221,6 +225,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->id = 0;
 	handle->head_lit = false;
 	handle->control = parent->control;
+	handle->max_var = parent->max_var;
 	handle->set = NULL;
 	handle->info = NULL;
 	handle->active_branch = NULL;
@@ -295,6 +300,37 @@ void ClauseTableauApplySubstitution(ClauseTableau_p tab, Subst_p subst)
 	
 	ClauseTableau_p master = tab->master;
 	ClauseTableauApplySubstitutionToNode(master, subst);
+}
+
+FunCode ClauseSetGetMaxVar(ClauseSet_p set)
+{
+	FunCode max_funcode = 0;
+	Clause_p start_label = set->anchor->succ;
+   PStack_p start_subterms = PStackAlloc();
+   while (start_label != set->anchor)
+   {
+		ClauseCollectSubterms(start_label, start_subterms);
+		start_label = start_label->succ;
+	}
+	FunCode max_var = 0;
+	Term_p temp_term = NULL;
+	for (PStackPointer p = 0; p<PStackGetSP(start_subterms); p++)
+	{
+		temp_term = PStackElementP(start_subterms, p);
+		if (TermIsVar(temp_term))
+		{
+			FunCode var_funcode = temp_term->f_code;
+			if (var_funcode < max_var)
+			{
+				max_funcode = var_funcode;
+			}
+		}
+	}
+	if (max_funcode == 0)
+	{
+		return -2;
+	}
+	return max_funcode;
 }
 
 /*  Recursively apply subst to the clauses in tab, and tab's children
@@ -392,14 +428,6 @@ Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
 		printf("   ");
 		ClausePrint(GlobalOut, b, true);
 		printf("\n");
-		/*
-		TBGCMarkTerm(bank, a_tform);
-		TBGCMarkTerm(bank, b_tform);
-		TBGCMarkTerm(bank,a_neg);
-		TBGCMarkTerm(bank,b_neg);
-		TBGCMarkTerm(bank,a_neg_nnf);
-		TBGCMarkTerm(bank,b_neg_nnf);
-		*/
 		if (!PStackGetSP(subst))
 		{
 			return subst;
@@ -407,14 +435,6 @@ Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
 		
 		return subst;
 	}
-	/*
-	TBGCMarkTerm(bank, a_tform);
-	TBGCMarkTerm(bank, b_tform);
-	TBGCMarkTerm(bank,a_neg);
-	TBGCMarkTerm(bank,b_neg);
-	TBGCMarkTerm(bank,a_neg_nnf);
-	TBGCMarkTerm(bank,b_neg_nnf);
-	*/
 	SubstDelete(subst);
 	
 	return NULL;
@@ -558,7 +578,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	while (unit_handle != tab->unit_axioms->anchor)
 	{
 		assert(unit_handle);
-		Clause_p fresh_unit = ClauseCopyFresh(unit_handle);
+		Clause_p fresh_unit = ClauseCopyFresh(unit_handle, tab);
 		if ((subst = ClauseContradictsClause(tab, clause, unit_handle)))
 		{
 			ClauseFree(fresh_unit);
@@ -656,7 +676,7 @@ Clause_p ClauseApplySubst(Clause_p clause,  TB_p bank, Subst_p subst)
 //
 /----------------------------------------------------------------------*/
 
-Clause_p ClauseCopyFresh(Clause_p clause)
+Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
 {
    PTree_p variable_tree;
    PStack_p variables;
@@ -683,7 +703,9 @@ Clause_p ClauseCopyFresh(Clause_p clause)
    for (p = 0; p < PStackGetSP(variables); p++)
    {
 	   old_var = PStackElementP(variables, p);
-	   fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
+	   //fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
+	   tableau->master->max_var -= 2;
+	   fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
 	   assert(fresh_var != old_var);
 	   SubstAddBinding(subst, old_var, fresh_var);
    }

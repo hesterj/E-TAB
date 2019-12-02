@@ -92,11 +92,11 @@ void ClauseSetFreeAnchor(ClauseSet_p junk)
    ClauseSetCellFree(junk);
 }
 
-ClauseSet_p SplitClauseFresh(TB_p bank, Clause_p clause)
+ClauseSet_p SplitClauseFresh(TB_p bank, ClauseTableau_p tableau, Clause_p clause)
 {
 	ClauseSet_p set = ClauseSetAlloc();
 	VarBankSetVCountsToUsed(bank->vars);
-	Clause_p fresh_clause = ClauseCopyFresh(clause);
+	Clause_p fresh_clause = ClauseCopyFresh(clause, tableau);
 	Eqn_p literals = EqnListCopy(fresh_clause->literals, bank);
 	Eqn_p lit = NULL;
 	Clause_p leaf_clause = NULL;
@@ -298,7 +298,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 {
 	int extensions_done = 0;
 	
-	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, selected);
+	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
 	//ClauseTableau_p parent = open_branch->parent;
 	Subst_p subst = NULL;
 	Clause_p leaf_clause = new_leaf_clauses->anchor->succ;

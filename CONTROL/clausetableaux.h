@@ -33,6 +33,7 @@ typedef struct clausetableau
 	
 	ProofState_p state;
 	ProofControl_p control;
+	long max_var; // f_code of the maximal variable in the tableau
 	
 	TB_p          terms;
 	Sig_p         signature;
@@ -76,6 +77,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 void ClauseTableauApplySubstitution(ClauseTableau_p tab, Subst_p subst);
 void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst);
 ClauseSet_p ClauseSetApplySubstitution(TB_p bank, ClauseSet_p set, Subst_p subst);
+FunCode ClauseSetGetMaxVar(ClauseSet_p set);
 Clause_p ClauseApplySubst(Clause_p clause,  TB_p bank, Subst_p subst);
 
 void ClauseTableauScoreActive(ClauseTableau_p tab);
@@ -86,7 +88,7 @@ void HCBClauseSetEvaluate(HCB_p hcb, ClauseSet_p clauses);
 ClauseSet_p ClauseSetCopy(TB_p bank, ClauseSet_p set);
 ClauseSet_p ClauseSetFlatCopy(TB_p bank, ClauseSet_p set);
 
-Clause_p ClauseCopyFresh(Clause_p clause);  // Major memory hog
+Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau);  // Major memory hog
 
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);

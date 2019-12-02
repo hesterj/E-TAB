@@ -45,7 +45,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 ClauseTableau_p open_branch, 
 															 TableauSet_p distinct_tableaux,
 															 Clause_p selected);
-ClauseSet_p SplitClauseFresh(TB_p bank, Clause_p clause); // Major memory eating offender
+ClauseSet_p SplitClauseFresh(TB_p bank, ClauseTableau_p tableau, Clause_p clause); // Major memory eating offender
 TableauExtension_p ClauseTableauCreateExtensionJobs(ClauseTableau_p open_branch, Clause_p selected);
 ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension);
 										   
