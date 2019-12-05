@@ -28,6 +28,7 @@ typedef struct tableaucontrol_cell
 #define TableauControlCellAlloc()    (TableauControlCell*)SizeMalloc(sizeof(TableauControlCell))
 #define TableauControlCellFree(junk) SizeFree(junk, sizeof(TableauControlCell))
 
+
 TableauControl_p TableauControlAlloc();
 void TableauControlFree(TableauControl_p trash);
 

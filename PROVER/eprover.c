@@ -546,11 +546,15 @@ int main(int argc, char* argv[])
 	srand(time(0));
 	if (TableauOptions == 1)
 	{
-		success = ConnectionTableau(proofstate->terms, proofstate->axioms, TableauDepth);
+		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
+		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
+		success = ConnectionTableau(tableau_terms, new_axioms, TableauDepth);
 		if (success)
 		{
 			PStackPushP(proofstate->extract_roots, EmptyClauseAlloc());
 		}
+		ClauseSetFree(new_axioms);
+		TBFree(tableau_terms);
 	}
 	
    if(!success)

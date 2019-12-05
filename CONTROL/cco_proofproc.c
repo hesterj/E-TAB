@@ -1637,6 +1637,7 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
       }
       if (state->tableauoptions > 1)
       {
+			TB_p tableau_bank = TBAlloc(state->terms->sig);
 			ClauseSet_p randomly_selected_from_unprocessed = ClauseSetAlloc();
 			Clause_p rand_handle = state->unprocessed->anchor->succ;
 			while (rand_handle != state->unprocessed->anchor)
@@ -1644,15 +1645,15 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 				bool random_bool = rand() & 1;
 				if (random_bool)
 				{
-					Clause_p copy = ClauseCopy(rand_handle, state->terms);
+					Clause_p copy = ClauseCopy(rand_handle, tableau_bank);
 					ClauseSetInsert(randomly_selected_from_unprocessed, copy);
 				}
 				if (randomly_selected_from_unprocessed->members > 4) break;
 				rand_handle = rand_handle->succ;
 			}
-			//unsatisfiable = ConnectionTableau(state->terms, state->axioms, state->tableaudepth);
-			unsatisfiable = ConnectionTableau(state->terms, randomly_selected_from_unprocessed, state->tableaudepth);
+			unsatisfiable = ConnectionTableau(tableau_bank, randomly_selected_from_unprocessed, state->tableaudepth);
 			ClauseSetFree(randomly_selected_from_unprocessed);
+			TBFree(tableau_bank);
 		}
 		if (unsatisfiable)
 		{

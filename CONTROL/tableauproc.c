@@ -98,7 +98,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 200000;
+	long MAX_TABLEAUX = 20000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
@@ -183,9 +183,29 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 
 Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 {
+	/*
+	printf("Clauses:\n");
+	ClauseSetPrint(GlobalOut, active, true);
+	printf("Terms %ld:\n", bank->term_store.entries);
+	TBPrintBankInOrder(GlobalOut, bank);
+	*/
    problemType = PROBLEM_FO;
    assert(max_depth);
-   assert(active->members > 0);
+   if (active->members == 0) return NULL;
+   ClauseSet_p unit_axioms = ClauseSetAlloc();
+   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
+   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
+   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
+																										extension_candidates->members,
+																										active->members);
+   assert(number_of_units == unit_axioms->members);
+   if (extension_candidates->members == 0)
+   {
+		ClauseSetFree(unit_axioms);
+		ClauseSetFree(extension_candidates);
+		return NULL;
+	}
+   
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
    ClauseTableau_p resulting_tab = NULL;
    TableauSet_p starting_tableaux = TableauMasterSetAlloc();
@@ -195,15 +215,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    TableauSetInsert(open_branches, initial_tab);
    
    FunCode max_var = ClauseSetGetMaxVar(active);
-   assert(max_var < 0);
-   
-   ClauseSet_p unit_axioms = ClauseSetAlloc();
-   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
-   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
-   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
-																										extension_candidates->members,
-																										active->members);
-   assert(number_of_units == unit_axioms->members);
+   assert(max_var <= 0);
    
    initial_tab->terms = bank;
    initial_tab->signature = NULL;
@@ -233,8 +245,6 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	TableauSet_p distinct_tableaux = NULL;
 	restart:
 	VarBankPushEnv(bank->vars);
-	ClauseSetGCMarkTerms(extension_candidates);
-	ClauseSetGCMarkTerms(unit_axioms);
 	distinct_tableaux = TableauMasterSetAlloc();
 	assert(distinct_tableaux);
 	assert(extension_candidates->anchor->succ);
@@ -251,17 +261,18 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	if (!resulting_tab)
 	{
 		TableauMasterSetFree(distinct_tableaux);
+		distinct_tableaux = NULL;
 		if (starting_tableaux->members > 0)
 		{
 			VarBankPopEnv(bank->vars);
 			long freed = TBGCSweep(bank);
+			ClauseSetGCMarkTerms(extension_candidates);
 			printf("Number of terms recovered: %ld\n", freed);
 			goto restart;
 		}
 	}
 	
 	ClauseSetFree(extension_candidates);
-	ClauseSetFree(unit_axioms);
    
    printf("# Connection tableau proof search finished.\n");
    
@@ -269,10 +280,14 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    {
 	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
    }
-   
-   TableauMasterSetFree(distinct_tableaux);
+   if (distinct_tableaux)
+   {
+		TableauMasterSetFree(distinct_tableaux);
+	}
    if (resulting_tab)
    {
+		printf("Proof search tableau success!\n");
+		exit(0);
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}

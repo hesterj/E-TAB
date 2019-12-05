@@ -275,6 +275,11 @@ void ClauseTableauFree(ClauseTableau_p trash)
 		TableauSetFree(trash->open_branches);
 		trash->open_branches = NULL;
 	}
+	if (trash->depth == 0 && trash->unit_axioms)
+	{
+		ClauseSetFree(trash->unit_axioms);
+		trash->unit_axioms = NULL;
+	}
 	ClauseTableauCellFree(trash);
 }
 
@@ -326,6 +331,7 @@ FunCode ClauseSetGetMaxVar(ClauseSet_p set)
 			}
 		}
 	}
+	PStackFree(start_subterms);
 	if (max_funcode == 0)
 	{
 		return -2;
@@ -698,7 +704,7 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
    PTreeToPStack(variables, variable_tree);
    PTreeFree(variable_tree);
    
-   //printf("Number of variables in %ld\n", num_variables);
+   //printf("Clause being copied: ");ClausePrint(GlobalOut, clause, true);printf("\n");
    
    for (p = 0; p < PStackGetSP(variables); p++)
    {
@@ -709,6 +715,8 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
 	   assert(fresh_var != old_var);
 	   SubstAddBinding(subst, old_var, fresh_var);
    }
+   
+	//printf("max_var %ld\n", tableau->master->max_var);
    
    handle = ClauseCopy(clause, clause->literals->bank);
    
@@ -913,8 +921,6 @@ ClauseTableau_p   TableauMasterSetExtractFirst(TableauSet_p list)
 void TableauMasterSetFree(TableauSet_p set)
 {
 	ClauseTableau_p handle = NULL;
-	assert(!set->anchor->succ);
-	assert(!set->anchor->pred);
 	while (set->members > 0)
 	{
 		handle = TableauMasterSetExtractFirst(set);

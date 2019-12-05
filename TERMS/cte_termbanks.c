@@ -650,7 +650,6 @@ TB_p TBAlloc(Sig_p sig)
 
 void TBFree(TB_p junk)
 {
-   assert(!junk->sig);
 
    /* printf("TBFree(): %ld\n", TermCellStoreNodes(&(junk->term_store)));
     */

@@ -169,6 +169,7 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
 	return true;
 }
 
+
 /*  Actually does an extension rule application.  head_literal_location is the PStackPointer corresponding of the head clause in 
  * 	new_leaf_clauses.  literal_number is the number of literals in the clause that is being split in the extension rule application.
  *  This method is only called by ClauseTableauExtensionRuleAttempt.  If this method is called there is likely a Subst_p active!
@@ -247,7 +248,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	if (!regular)
 	{
 		//printf("# Irregular extension!\n");
-		ClauseSetFreeAnchor(new_leaf_clauses_set);
+		assert(new_leaf_clauses_set->members == 0);
+		ClauseSetFree(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
 		SubstDelete(extension->subst);
 		return NULL;
@@ -280,7 +282,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	parent->open = false;
 	
 	// There is no need to apply the substitution to the tablaeu, it has already been done by copying labels.
-	ClauseSetFreeAnchor(new_leaf_clauses_set); // the members of this set are now labels
+	assert(new_leaf_clauses_set->members == 0);
+	ClauseSetFree(new_leaf_clauses_set);
 	return parent;
 }
 

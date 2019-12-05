@@ -414,6 +414,7 @@ void SigFixType(Sig_p sig, FunCode f_code)
 /----------------------------------------------------------------------*/
 bool SigIsPolymorphic(Sig_p sig, FunCode f_code)
 {
+	//printf("SigIsPolymorphic: %ld %ld\n", f_code, sig->f_count);
    assert(f_code > 0);
    assert(f_code <= sig->f_count);
 
