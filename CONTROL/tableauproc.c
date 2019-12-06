@@ -98,7 +98,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 20000;
+	long MAX_TABLEAUX = 5000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
@@ -287,7 +287,6 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    if (resulting_tab)
    {
 		printf("Proof search tableau success!\n");
-		exit(0);
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}

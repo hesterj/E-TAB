@@ -738,6 +738,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	assert(!(tab->arity));
 	assert(tab->master_set);
 	assert(start);
+	assert(tab->unit_axioms);
 	
 	arity = ClauseLiteralNumber(start);
 	tab->arity = arity;
@@ -745,8 +746,9 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	TableauSetExtractEntry(tab); // no longer open
 	assert(tab->open_branches->members == 0);
 	tab->label = ClauseCopy(start, bank);
-	ClauseGCMarkTerms(tab->label);
 	assert(tab->label);
+	ClauseGCMarkTerms(tab->label);
+	ClauseSetGCMarkTerms(tab->unit_axioms);
 	
 	if (tab->label->ident >= 0) tab->id = tab->label->ident;
 	else tab->id = tab->label->ident - LONG_MIN;
