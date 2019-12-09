@@ -1640,12 +1640,14 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 			TB_p tableau_bank = TBAlloc(state->terms->sig);
 			ClauseSet_p randomly_selected_from_unprocessed = ClauseSetAlloc();
 			Clause_p rand_handle = state->unprocessed->anchor->succ;
+			assert(rand_handle);
 			while (rand_handle != state->unprocessed->anchor)
 			{
 				bool random_bool = rand() & 1;
 				if (random_bool)
 				{
 					Clause_p copy = ClauseCopy(rand_handle, tableau_bank);
+					//Clause_p copy = ClauseCopy(rand_handle, state->terms);
 					ClauseSetInsert(randomly_selected_from_unprocessed, copy);
 				}
 				if (randomly_selected_from_unprocessed->members > 4) break;

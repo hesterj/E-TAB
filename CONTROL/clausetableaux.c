@@ -53,8 +53,10 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->depth = tab->depth;
 	
 	assert(handle->depth == 0);
+	assert(tab->unit_axioms);
 	
-	handle->unit_axioms = ClauseSetCopy(bank, tab->unit_axioms);
+	//handle->unit_axioms = ClauseSetCopy(bank, tab->unit_axioms);
+	handle->unit_axioms = tab->unit_axioms;
 	handle->set = NULL;
 	handle->master_set = NULL;
 	handle->pred = NULL;
@@ -109,7 +111,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p parent)
 {
 	//TB_p bank = tab->terms; //Copy tableau tab
-	
+	assert(parent->unit_axioms);
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	handle->unit_axioms = parent->unit_axioms;
 	handle->info = NULL;
@@ -275,11 +277,13 @@ void ClauseTableauFree(ClauseTableau_p trash)
 		TableauSetFree(trash->open_branches);
 		trash->open_branches = NULL;
 	}
+	/*
 	if (trash->depth == 0 && trash->unit_axioms)
 	{
 		ClauseSetFree(trash->unit_axioms);
 		trash->unit_axioms = NULL;
 	}
+	*/
 	ClauseTableauCellFree(trash);
 }
 
@@ -317,7 +321,6 @@ FunCode ClauseSetGetMaxVar(ClauseSet_p set)
 		ClauseCollectSubterms(start_label, start_subterms);
 		start_label = start_label->succ;
 	}
-	FunCode max_var = 0;
 	Term_p temp_term = NULL;
 	for (PStackPointer p = 0; p<PStackGetSP(start_subterms); p++)
 	{
@@ -325,17 +328,20 @@ FunCode ClauseSetGetMaxVar(ClauseSet_p set)
 		if (TermIsVar(temp_term))
 		{
 			FunCode var_funcode = temp_term->f_code;
-			if (var_funcode < max_var)
+			//printf("%ld ", var_funcode);
+			if (var_funcode <= max_funcode)
 			{
 				max_funcode = var_funcode;
 			}
 		}
 	}
+	//printf("\n");
 	PStackFree(start_subterms);
 	if (max_funcode == 0)
 	{
 		return -2;
 	}
+	//printf("max_funcode: %ld\n", max_funcode);
 	return max_funcode;
 }
 
@@ -697,7 +703,7 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
    variable_bank = clause->literals->bank->vars;
    variables = PStackAlloc();
    variable_tree = NULL;
-   VarBankSetVCountsToUsed(variable_bank);
+   //VarBankSetVCountsToUsed(variable_bank);
    subst = SubstAlloc();
    
    ClauseCollectVariables(clause, &variable_tree);
@@ -710,10 +716,21 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
    {
 	   old_var = PStackElementP(variables, p);
 	   //fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
+	   //printf("tableau max var: %ld\n", tableau->master->max_var);
 	   tableau->master->max_var -= 2;
 	   fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
 	   assert(fresh_var != old_var);
+	   assert(fresh_var->f_code != old_var->f_code);
+	   if (fresh_var->f_code == old_var->f_code)
+	   {
+			//printf("continuing\n"); 
+			exit(0);
+			continue;
+		}
 	   SubstAddBinding(subst, old_var, fresh_var);
+	   //printf("The subst: %ld %ld\n", fresh_var->f_code, old_var->f_code);
+	   //SubstPrint(GlobalOut, subst, tableau->terms->sig, DEREF_NEVER);
+	   //printf("\n");
    }
    
 	//printf("max_var %ld\n", tableau->master->max_var);
@@ -748,7 +765,6 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	tab->label = ClauseCopy(start, bank);
 	assert(tab->label);
 	ClauseGCMarkTerms(tab->label);
-	ClauseSetGCMarkTerms(tab->unit_axioms);
 	
 	if (tab->label->ident >= 0) tab->id = tab->label->ident;
 	else tab->id = tab->label->ident - LONG_MIN;

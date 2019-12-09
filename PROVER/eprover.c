@@ -555,6 +555,12 @@ int main(int argc, char* argv[])
 		}
 		ClauseSetFree(new_axioms);
 		TBFree(tableau_terms);
+		if (!success)
+		{
+			TSTPOUT(GlobalOut, "ResourceOut");
+			TSTPOUT(GlobalOut, "GaveUp");
+			exit(0);
+		}
 	}
 	
    if(!success)

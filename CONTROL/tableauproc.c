@@ -98,12 +98,23 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 5000;
+	long MAX_TABLEAUX = 100000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
 		printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		if (control->closed_tableau)
+		{
+			printf("Success\n");
+			exit(0);
+		}
+		else if (distinct_tableaux->members == 1)
+		{
+			printf("The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
+			assert(distinct_tableaux->anchor->master_succ);
+			//ClauseTableauPrint(distinct_tableaux->anchor->master_succ);
+		}
 		if (active_tableau->open_branches->members == 0)
 		{
 			printf("# Closed tableau found!\n");
@@ -121,10 +132,20 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			number_of_extensions = 0;
 			if (ClauseTableauBranchClosureRuleWrapper(open_branch))
 			{
-				printf("# Branch closed with closure rule.\n");
+				assert(open_branch);
+				assert(open_branch->open_branches);
+				assert(open_branch->open_branches->members >= 0);
+				
+				printf("# Branch closed with closure rule. %ld remaining.\n", active_tableau->open_branches->members);
 				open_branch->open = false;
 				open_branch = open_branch->succ;
 				TableauSetExtractEntry(open_branch->pred);
+				if (active_tableau->open_branches->members == 0)
+				{
+					control->closed_tableau = open_branch->master;
+					ClauseTableauPrint(control->closed_tableau);
+					return control->closed_tableau;
+				}
 				continue;
 			}
 			else if (open_branch->depth > max_depth)
@@ -165,6 +186,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		active_tableau = active_tableau->master_succ;
 		if (number_of_extensions > 0)
 		{
+			printf("Number of active tableau before extension-free step: %ld\n", distinct_tableaux->members);
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
 			ClauseTableauFree(trash);
@@ -214,6 +236,8 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    TableauSet_p open_branches = initial_tab->open_branches;
    TableauSetInsert(open_branches, initial_tab);
    
+   //ClauseSetPrint(GlobalOut, active, true);printf("\n");
+   
    FunCode max_var = ClauseSetGetMaxVar(active);
    assert(max_var <= 0);
    
@@ -223,6 +247,7 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
    
    //  Move all of the unit clauses to be on the initial tableau
    initial_tab->unit_axioms = unit_axioms;
+   //ClauseSetGCMarkTerms(unit_axioms);
    
 	ClauseTableau_p beginning_tableau = NULL;
 	// Create a tableau for each axiom using the start rule
@@ -265,9 +290,10 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 		if (starting_tableaux->members > 0)
 		{
 			VarBankPopEnv(bank->vars);
-			long freed = TBGCSweep(bank);
-			ClauseSetGCMarkTerms(extension_candidates);
-			printf("Number of terms recovered: %ld\n", freed);
+			//long freed = TBGCSweep(bank);
+			//ClauseSetGCMarkTerms(extension_candidates);
+			//ClauseSetGCMarkTerms(unit_axioms);
+			//printf("Number of terms recovered: %ld\n", freed);
 			goto restart;
 		}
 	}
@@ -275,20 +301,20 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 	ClauseSetFree(extension_candidates);
    
    printf("# Connection tableau proof search finished.\n");
-   
-   if (!resulting_tab)
-   {
-	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
-   }
+
    if (distinct_tableaux)
    {
 		TableauMasterSetFree(distinct_tableaux);
 	}
+   if (!resulting_tab)
+   {
+	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
+	  return NULL;
+   }
    if (resulting_tab)
    {
 		printf("Proof search tableau success!\n");
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}
-   return NULL;
 }

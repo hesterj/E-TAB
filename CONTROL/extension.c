@@ -94,8 +94,10 @@ void ClauseSetFreeAnchor(ClauseSet_p junk)
 
 ClauseSet_p SplitClauseFresh(TB_p bank, ClauseTableau_p tableau, Clause_p clause)
 {
+	assert(clause);
 	ClauseSet_p set = ClauseSetAlloc();
 	VarBankSetVCountsToUsed(bank->vars);
+	//printf("Clause being copied fresh: ");ClausePrint(GlobalOut, clause, true);printf("\n");
 	Clause_p fresh_clause = ClauseCopyFresh(clause, tableau);
 	Eqn_p literals = EqnListCopy(fresh_clause->literals, bank);
 	Eqn_p lit = NULL;
@@ -339,6 +341,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 				{
 					printf("# Closed tableau found!\n");
 					control->closed_tableau = maybe_extended->master;
+					ClauseSetFree(new_leaf_clauses);
 					return extensions_done;
 				}
 			}
