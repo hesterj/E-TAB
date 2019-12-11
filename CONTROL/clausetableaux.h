@@ -25,8 +25,13 @@ typedef struct clausetableau
 	
 	Clause_p label;
 	ClauseSet_p unit_axioms;
-	ClauseSet_p passive;
-	ClauseSet_p recently_active;
+	
+	Clause_p mark;  // If the branch is closed, this is the clause that was used to close it
+	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
+	
+	//ClauseSet_p passive;
+	//ClauseSet_p recently_active;
+	
 	DStr_p info;
 	long id;  // If a clause was split on a node, this is the id of the clause used to split.
 	bool head_lit;  //If this node was made as a head literal in an extension step, it is true.  Otherwise false.
@@ -134,6 +139,7 @@ ClauseTableau_p   TableauMasterSetExtractFirst(TableauSet_p list);
 ClauseTableau_p TableauMasterSetExtractEntry(ClauseTableau_p set);
 void TableauMasterSetFree(TableauSet_p handle);
 void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves);
+void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
 
 
 #endif

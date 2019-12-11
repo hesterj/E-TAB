@@ -1653,7 +1653,7 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 				if (randomly_selected_from_unprocessed->members > 4) break;
 				rand_handle = rand_handle->succ;
 			}
-			unsatisfiable = ConnectionTableau(tableau_bank, randomly_selected_from_unprocessed, state->tableaudepth);
+			unsatisfiable = ConnectionTableauSerial(tableau_bank, randomly_selected_from_unprocessed, state->tableaudepth);
 			ClauseSetFree(randomly_selected_from_unprocessed);
 			TBFree(tableau_bank);
 		}

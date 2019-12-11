@@ -16,6 +16,8 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->depth = 0;
 	handle->arity = 0;
 	handle->unit_axioms = NULL;
+	handle->mark = NULL;
+	handle->folding_labels = NULL;
 	handle->set = NULL;
 	handle->head_lit = false;
 	handle->id = 0;
@@ -61,6 +63,22 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->master_set = NULL;
 	handle->pred = NULL;
 	handle->id = tab->id;
+	if (tab->mark)
+	{
+		handle->mark = ClauseCopy(tab->mark, bank);
+	}
+	else
+	{
+		handle->mark = NULL;
+	}
+	if (tab->folding_labels)
+	{
+		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
+	}
+	else
+	{
+		handle->folding_labels = NULL;
+	}
 	handle->head_lit = tab->head_lit;
 	handle->succ = NULL;
 	handle->master_pred = NULL;
@@ -110,7 +128,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 
 ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p parent)
 {
-	//TB_p bank = tab->terms; //Copy tableau tab
+	TB_p bank = tab->terms; //Copy tableau tab
 	assert(parent->unit_axioms);
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	handle->unit_axioms = parent->unit_axioms;
@@ -133,6 +151,22 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->open = tab->open;
 	handle->arity = tab->arity;
 	
+	if (tab->mark)
+	{
+		handle->mark = ClauseCopy(tab->mark, bank);
+	}
+	else
+	{
+		handle->mark = NULL;
+	}
+	if (tab->folding_labels)
+	{
+		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
+	}
+	else
+	{
+		handle->folding_labels = NULL;
+	}
 	if (tab->master->active_branch == tab)
 	{
 		handle->master->active_branch = handle;
@@ -148,7 +182,6 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	{
 		tab->label = NULL;
 	}
-	
 	if ((handle->arity == 0) && (handle->open)) // If one of the open branches is found during copying, add it to the collection of open branches
 	{
 		TableauSetInsert(handle->open_branches, handle);
@@ -184,7 +217,6 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	parent->open = false; // We only want leaf nodes in the collection of open breanches
 	
 	handle->unit_axioms = parent->unit_axioms;
-	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	
 	handle->depth = parent->depth + 1;
@@ -194,6 +226,8 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	handle->info = NULL;
 	handle->active_branch = NULL;
 	handle->set = NULL;
+	handle->mark = NULL;
+	handle->folding_labels = NULL;
 	handle->id = 0;
 	handle->head_lit = false;
 	handle->master_set = NULL;
@@ -221,7 +255,6 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	parent->arity += 1;
 	handle->depth = parent->depth + 1;
 	handle->unit_axioms = parent->unit_axioms;
-	handle->recently_active = parent->recently_active;
 	handle->open_branches = parent->open_branches;
 	handle->label = label;
 	handle->id = 0;
@@ -229,6 +262,8 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->control = parent->control;
 	handle->max_var = parent->max_var;
 	handle->set = NULL;
+	handle->mark = NULL;
+	handle->folding_labels = NULL;
 	handle->info = NULL;
 	handle->active_branch = NULL;
 	handle->master_set = NULL;
@@ -261,6 +296,14 @@ void ClauseTableauFree(ClauseTableau_p trash)
 	if (trash->info)
 	{
 		DStrFree(trash->info);
+	}
+	if (trash->mark)
+	{
+		ClauseFree(trash->mark);
+	}
+	if (trash->folding_labels)
+	{
+		ClauseSetFree(trash->folding_labels);
 	}
 	if (trash->children)
 	{
@@ -573,6 +616,22 @@ void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves)
 	}
 }
 
+/*  
+ * Collects the leaves below a tableau node
+*/
+
+void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves)
+{
+	if (tab->arity == 0) // found a leaf
+	{
+		PStackPushP(leaves, tab);
+	}
+	for (int i=0; i<tab->arity; i++)
+	{
+		ClauseTableauCollectLeavesStack(tab->children[i], leaves);
+	}
+}
+
 /*  Checks clause for contradiction against the nodes of tab
  *  Used to avoid allocating tableau children until we know there is a successful extension
  * 
@@ -764,7 +823,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	assert(tab->open_branches->members == 0);
 	tab->label = ClauseCopy(start, bank);
 	assert(tab->label);
-	ClauseGCMarkTerms(tab->label);
+	//ClauseGCMarkTerms(tab->label);
 	
 	if (tab->label->ident >= 0) tab->id = tab->label->ident;
 	else tab->id = tab->label->ident - LONG_MIN;
@@ -781,7 +840,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 		new_clause = ClauseAlloc(lit);
 		ClauseRecomputeLitCounts(new_clause);
 		child->label = new_clause;
-		ClauseGCMarkTerms(child->label); // Do not delete clauses that are labels we could use
+		//ClauseGCMarkTerms(child->label); // Do not delete clauses that are labels we could use
 		assert(child->label);
 		TableauSetInsert(child->open_branches, child);
 	}

@@ -1,5 +1,5 @@
 #include "extension.h"
-#include "clausetableaux.h"
+//#include "clausetableaux.h"
 
 TableauExtension_p TableauExtensionAlloc(Clause_p selected,
 										 Subst_p subst, 

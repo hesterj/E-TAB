@@ -1,7 +1,7 @@
 #ifndef EXTENSION
 #define EXTENSION
 
-#include <clausetableaux.h>
+#include <foldingup.h>
 
 /*  Storage type for potential extension steps to be done at a single node
  *  This is needed because there can be several extension steps to be done

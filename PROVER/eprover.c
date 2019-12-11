@@ -548,7 +548,7 @@ int main(int argc, char* argv[])
 	{
 		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
 		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
-		success = ConnectionTableau(tableau_terms, new_axioms, TableauDepth);
+		success = ConnectionTableauSerial(tableau_terms, new_axioms, TableauDepth);
 		if (success)
 		{
 			PStackPushP(proofstate->extract_roots, EmptyClauseAlloc());

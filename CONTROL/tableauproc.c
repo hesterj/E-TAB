@@ -1,4 +1,5 @@
 #include "tableauproc.h"
+#include <omp.h>
 
 /*  Global Variables
 */
@@ -203,7 +204,16 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	return NULL;
 }
 
-Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
+/*  Create clausal connection tableau for the active clause set.
+ *  If there is more than one, the start rule will be applied one at a time.
+ *  After all the tableaux have been built up to the max depth (or MAX_TABLEAU has been exceeded),
+ *  without success, the next start rule application is checked.  
+ *  Opportunity for paralellism here, as all the start rule applications could be 
+ *  done without too much duplication of the TB_p as would happen if every tableau
+ *  had its own term bank.
+*/
+
+Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 {
 	/*
 	printf("Clauses:\n");
@@ -317,4 +327,5 @@ Clause_p ConnectionTableau(TB_p bank, ClauseSet_p active, int max_depth)
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}
+	return NULL;
 }
