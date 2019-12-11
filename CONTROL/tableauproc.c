@@ -118,7 +118,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		}
 		if (active_tableau->open_branches->members == 0)
 		{
-			printf("# Closed tableau found!\n");
+			bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
+			printf("# Closed tableau found! %d\n", all_branches_closed);
 			ClauseTableauPrint(active_tableau);
 			return active_tableau;
 		}
@@ -144,6 +145,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				if (active_tableau->open_branches->members == 0)
 				{
 					control->closed_tableau = open_branch->master;
+					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
+					printf("All branches closed... %d\n", all_branches_closed);
 					ClauseTableauPrint(control->closed_tableau);
 					return control->closed_tableau;
 				}
@@ -164,6 +167,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 																										selected);
 				if (control->closed_tableau)
 				{
+					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
+					printf("Closed tableau... %d\n", all_branches_closed);
 					ClauseTableauPrint(control->closed_tableau);
 					return control->closed_tableau;
 				}
@@ -291,7 +296,11 @@ Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
 													 extension_candidates, 
 													 current_depth);
-		if (resulting_tab) break;  // Closed tableau found
+		if (resulting_tab)
+		{
+			printf("Closed tableau found!\n");
+			break;
+		}
 	}
 	if (!resulting_tab)
 	{

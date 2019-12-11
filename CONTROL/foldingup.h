@@ -3,6 +3,6 @@
 
 #include <clausetableaux.h>
 
-void ClauseTableauMarkClosedNodes(ClauseTableau_p tableau);
+bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau);
 
 #endif
