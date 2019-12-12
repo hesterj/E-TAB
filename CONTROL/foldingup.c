@@ -8,6 +8,7 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 {
 	if (!tableau->open)
 	{
+		printf("tableau is marked as closed\n");
 		return true;
 	}
 	int arity = tableau->arity;
@@ -28,6 +29,7 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 	}
 	if (all_children_closed)
 	{
+		printf("all children closed, arity %d\n", tableau->arity);
 		tableau->open = false;
 		return true;
 	}

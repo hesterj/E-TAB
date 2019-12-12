@@ -281,7 +281,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(parent->open);
 	assert(parent->arity == number_of_children);
 	TableauSetExtractEntry(parent);
-	parent->open = false;
+	//parent->open = false;
 	
 	// There is no need to apply the substitution to the tablaeu, it has already been done by copying labels.
 	assert(new_leaf_clauses_set->members == 0);

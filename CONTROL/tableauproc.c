@@ -104,7 +104,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		printf("# Number of distinct tableaux: %ld Closed: %d\n", distinct_tableaux->members,
+																					ClauseTableauMarkClosedNodes(active_tableau));
 		if (control->closed_tableau)
 		{
 			printf("Success\n");
@@ -203,7 +204,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		old_number_of_distinct_tableaux = distinct_tableaux->members;
 		number_of_extensions = 0;
 	}
-	printf("# Went through all of the possible tableaux.\n");
+	
+	printf("# Went through all of the possible tableaux\n");
 	
 	//ClauseSetFree(extension_candidates);
 	return NULL;
@@ -331,6 +333,111 @@ Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 	  return NULL;
    }
    if (resulting_tab)
+   {
+		printf("Proof search tableau success!\n");
+		Clause_p empty = EmptyClauseAlloc();
+		return empty;
+	}
+	return NULL;
+}
+
+/*  As ConnectionTableauSerial, but builds tableau on all start rule
+ *  applications at once.  Does not use any multhreading.
+*/
+
+Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
+{
+	/*
+	printf("Clauses:\n");
+	ClauseSetPrint(GlobalOut, active, true);
+	printf("Terms %ld:\n", bank->term_store.entries);
+	TBPrintBankInOrder(GlobalOut, bank);
+	*/
+   problemType = PROBLEM_FO;
+   assert(max_depth);
+   if (active->members == 0) return NULL;
+   ClauseSet_p unit_axioms = ClauseSetAlloc();
+   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
+   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
+   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
+																										extension_candidates->members,
+																										active->members);
+   assert(number_of_units == unit_axioms->members);
+   if (extension_candidates->members == 0)
+   {
+		ClauseSetFree(unit_axioms);
+		ClauseSetFree(extension_candidates);
+		return NULL;
+	}
+   
+   ClauseTableau_p initial_tab = ClauseTableauAlloc();
+   ClauseTableau_p resulting_tab = NULL;
+   TableauSet_p distinct_tableaux = TableauMasterSetAlloc();
+   
+   initial_tab->open_branches = TableauSetAlloc();
+   TableauSet_p open_branches = initial_tab->open_branches;
+   TableauSetInsert(open_branches, initial_tab);
+   
+   //ClauseSetPrint(GlobalOut, active, true);printf("\n");
+   
+   FunCode max_var = ClauseSetGetMaxVar(active);
+   assert(max_var <= 0);
+   
+   initial_tab->terms = bank;
+   initial_tab->signature = NULL;
+   initial_tab->state = NULL;
+   
+   //  Move all of the unit clauses to be on the initial tableau
+   initial_tab->unit_axioms = unit_axioms;
+   //ClauseSetGCMarkTerms(unit_axioms);
+   
+	ClauseTableau_p beginning_tableau = NULL;
+	// Create a tableau for each axiom using the start rule
+   Clause_p start_label = extension_candidates->anchor->succ;
+   while (start_label != extension_candidates->anchor)
+   {
+		beginning_tableau = ClauseTableauMasterCopy(initial_tab);
+		beginning_tableau->max_var = max_var;
+		TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
+		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
+		start_label = start_label->succ;
+	}
+	
+	
+	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
+	
+	
+	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
+	
+	VarBankPushEnv(bank->vars);
+	for (int current_depth = 1; current_depth < max_depth; current_depth++)
+	{
+		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
+													 extension_candidates, 
+													 current_depth);
+		if (resulting_tab)
+		{
+			printf("Closed tableau found!\n");
+			break;
+		}
+	}
+	
+	ClauseSetFree(extension_candidates);
+	VarBankPopEnv(bank->vars);
+   
+   printf("# Connection tableau proof search finished.\n");
+
+   if (distinct_tableaux) // Free the tableux
+   {
+		TableauMasterSetFree(distinct_tableaux);
+		distinct_tableaux = NULL;
+	}
+   if (!resulting_tab) // failure
+   {
+	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
+	  return NULL;
+   }
+   if (resulting_tab) // success
    {
 		printf("Proof search tableau success!\n");
 		Clause_p empty = EmptyClauseAlloc();

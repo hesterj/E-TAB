@@ -214,7 +214,7 @@ void ClauseTableauInitialize(ClauseTableau_p handle, ProofState_p initial)
 ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 {
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
-	parent->open = false; // We only want leaf nodes in the collection of open breanches
+	parent->open = true; // We only want leaf nodes in the collection of open breanches
 	
 	handle->unit_axioms = parent->unit_axioms;
 	handle->open_branches = parent->open_branches;
@@ -277,7 +277,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->parent = parent;
 	handle->master = parent->master;
 	handle->state = parent->state;
-	handle->open = true; // The tableau as alloc'd as NOT OPEN!
+	handle->open = true;
 	handle->arity = 0;
 	assert(!handle->set);
 	return handle;
@@ -586,16 +586,25 @@ Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set
 
 void ClauseTableauPrint(ClauseTableau_p tab)
 {
-	TableauSet_p leaves = TableauSetAlloc();
-	ClauseTableauCollectLeaves(tab, leaves);
-	ClauseTableau_p handle = leaves->anchor->succ;
+	//TableauSet_p leaves = TableauSetAlloc();
+	PStack_p leaves = PStackAlloc();
+	ClauseTableauCollectLeavesStack(tab, leaves);
+	//ClauseTableauCollectLeaves(tab, leaves);
+	//ClauseTableau_p handle = leaves->anchor->succ;
 	printf("# Printing the branches of the tableau:\n");
+	/*
 	while ((handle = TableauSetExtractFirst(leaves)))
 	{
 		ClauseTableauPrintBranch(handle);printf("\n");
 	}
-	assert(leaves->members == 0);
-	TableauSetFree(leaves);
+	*/
+	for (PStackPointer p = 0; p<PStackGetSP(leaves); p++)
+	{
+		ClauseTableau_p handle = PStackElementP(leaves, p);
+		ClauseTableauPrintBranch(handle);printf("\n");
+	}
+	//TableauSetFree(leaves);
+	PStackFree(leaves);
 	printf("\n# Done.\n");
 }
 
@@ -818,7 +827,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	
 	arity = ClauseLiteralNumber(start);
 	tab->arity = arity;
-	tab->open = false;
+	tab->open = true;
 	TableauSetExtractEntry(tab); // no longer open
 	assert(tab->open_branches->members == 0);
 	tab->label = ClauseCopy(start, bank);
