@@ -26,7 +26,7 @@ typedef struct clausetableau
 	Clause_p label;
 	ClauseSet_p unit_axioms;
 	
-	Clause_p mark;  // If the branch is closed, this is the clause that was used to close it
+	Clause_p mark;  // If the node is closed, this is the clause that was used to close it
 	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
 	
 	//ClauseSet_p passive;
@@ -102,6 +102,10 @@ bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab);
 
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
 int ClauseTableauAssertCheck(ClauseTableau_p tab);
+
+
+#define NodeIsLeaf(tab) (tab->arity != 0)
+#define NodeIsNonLeaf(tab) (tab->arity == 0)
 
 
 /*  Now for tableau sets...

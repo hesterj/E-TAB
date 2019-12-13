@@ -40,3 +40,43 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 	}
 	return false;
 }
+
+/*  Simple wrapper for CollectDominatedMarkings
+*/
+
+ClauseSet_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
+{
+	ClauseSet_p marks = ClauseSetAlloc();
+	CollectDominatedMarkings(tableau, marks);
+	return marks;
+}
+
+/*  For all of the nodes below tableau, collect the markings in to 
+ *  the clause set.  As used in folding up, all of the nodes below
+ *  should have a marking, as they have been closed by an extension 
+ *  step or a closure (reduction) rule.
+*/
+
+void CollectDominatedMarkings(ClauseTableau_p tableau, ClauseSet_p marks)
+{
+	if (tableau->mark)
+	{
+		assert(!(tableau->open));
+		ClauseSetInsert(marks, tableau->mark);
+	}
+	for (int i=0; i<tableau->arity; i++)
+	{
+		CollectDominatedMarkings(tableau->children[i], marks);
+	}
+}
+
+PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, ClauseSet_p marks)
+{
+	PStack_p dominating_nodes = PStackAlloc();
+	ClauseTableau_p father = tableau->parent;
+	while(father->parent)
+	{
+		if ()
+		parent = father->parent;
+	}
+}
