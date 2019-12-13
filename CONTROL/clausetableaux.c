@@ -14,6 +14,7 @@ ClauseTableau_p ClauseTableauAlloc()
 {
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	handle->depth = 0;
+	handle->position = 0;
 	handle->arity = 0;
 	handle->unit_axioms = NULL;
 	handle->mark = NULL;
@@ -53,6 +54,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->arity = tab->arity;
 	handle->info = NULL;
 	handle->depth = tab->depth;
+	handle->position = tab->position;
 	
 	assert(handle->depth == 0);
 	assert(tab->unit_axioms);
@@ -145,6 +147,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->parent = parent;
 	handle->master = parent->master;
 	handle->depth = 1+parent->depth;
+	handle->position = tab->position;
 	assert(handle->depth > 0);
 	assert((handle->depth = parent->depth + 1));
 	handle->state = parent->state;
@@ -211,15 +214,15 @@ void ClauseTableauInitialize(ClauseTableau_p handle, ProofState_p initial)
 	handle->terms = initial->terms;
 }
 
-ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
+ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent, int position)
 {
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	parent->open = true; // We only want leaf nodes in the collection of open breanches
 	
 	handle->unit_axioms = parent->unit_axioms;
 	handle->open_branches = parent->open_branches;
-	
 	handle->depth = parent->depth + 1;
+	handle->position = position;
 	handle->control = parent->control;
 	handle->label = NULL;
 	handle->max_var = parent->max_var;
@@ -246,14 +249,14 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent)
 	return handle;
 }
 
-ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p label)
+ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p label, int position)
 {
 	ClauseTableau_p handle = ClauseTableauCellAlloc();
 	assert(parent);
 	assert(label);
-	
 	parent->arity += 1;
 	handle->depth = parent->depth + 1;
+	handle->position = position;
 	handle->unit_axioms = parent->unit_axioms;
 	handle->open_branches = parent->open_branches;
 	handle->label = label;
@@ -844,7 +847,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	for (int i=0; i<arity; i++)
 	{
 		lit = EqnListExtractFirst(&literals);
-		tab->children[i] = ClauseTableauChildAlloc(tab);
+		tab->children[i] = ClauseTableauChildAlloc(tab, i);
 		child = tab->children[i];
 		new_clause = ClauseAlloc(lit);
 		ClauseRecomputeLitCounts(new_clause);

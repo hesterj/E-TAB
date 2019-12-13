@@ -22,6 +22,11 @@ typedef struct clausetableau
 	PStack_p functions;
 	bool open;
 	int depth;
+	int position; // If the node is a child, this is its position in the children array of the parent
+	
+	// If the node has been closed by extension or reduction,
+	// mark_int is the number of steps up we need to go to get to what is marked.  0 means not marked.
+	int mark_int;  
 	
 	Clause_p label;
 	ClauseSet_p unit_axioms;
@@ -77,8 +82,8 @@ void ClauseTableauInitialize(ClauseTableau_p handle, ProofState_p state);
 void ClauseTableauFree(ClauseTableau_p trash);
 ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab);
 ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p parent);
-ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent);
-ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p label);
+ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent, int position);
+ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p label, int position);
 void ClauseTableauApplySubstitution(ClauseTableau_p tab, Subst_p subst);
 void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst);
 ClauseSet_p ClauseSetApplySubstitution(TB_p bank, ClauseSet_p set, Subst_p subst);
@@ -144,6 +149,16 @@ ClauseTableau_p TableauMasterSetExtractEntry(ClauseTableau_p set);
 void TableauMasterSetFree(TableauSet_p handle);
 void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves);
 void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
+
+/*
+ *  Tree positions... just arrays of ints
+*/
+
+typedef struct tableau_position_cell
+{
+   int size;
+   int array[];
+}TableauPositionCell, *TableauPosition_p;
 
 
 #endif

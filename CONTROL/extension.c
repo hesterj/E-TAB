@@ -234,7 +234,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			regular = false;
 		}
 		assert(leaf_clause);
-		parent->children[p] = ClauseTableauChildLabelAlloc(parent, leaf_clause);
+		parent->children[p] = ClauseTableauChildLabelAlloc(parent, leaf_clause, p);
 		if (leaf_clause == head_literal_clause)
 		{
 			parent->children[p]->open = false; 

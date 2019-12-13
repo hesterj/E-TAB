@@ -76,7 +76,10 @@ PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, ClauseSet_p 
 	ClauseTableau_p father = tableau->parent;
 	while(father->parent)
 	{
-		if ()
-		parent = father->parent;
+		if (father->label)
+		{
+			
+		}
+		father = father->parent;
 	}
 }
