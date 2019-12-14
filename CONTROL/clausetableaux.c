@@ -17,7 +17,8 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->position = 0;
 	handle->arity = 0;
 	handle->unit_axioms = NULL;
-	handle->mark = NULL;
+	//handle->mark = NULL;
+	handle->mark_int = 0;
 	handle->folding_labels = NULL;
 	handle->set = NULL;
 	handle->head_lit = false;
@@ -65,6 +66,8 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->master_set = NULL;
 	handle->pred = NULL;
 	handle->id = tab->id;
+	handle->mark_int = tab->mark_int;
+	/*
 	if (tab->mark)
 	{
 		handle->mark = ClauseCopy(tab->mark, bank);
@@ -73,6 +76,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	{
 		handle->mark = NULL;
 	}
+	*/
 	if (tab->folding_labels)
 	{
 		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
@@ -144,6 +148,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->active_branch = NULL;
 	handle->signature = parent->signature;
 	handle->terms = parent->terms;
+	handle->mark_int = tab->mark_int;
 	handle->parent = parent;
 	handle->master = parent->master;
 	handle->depth = 1+parent->depth;
@@ -153,7 +158,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->state = parent->state;
 	handle->open = tab->open;
 	handle->arity = tab->arity;
-	
+	/*
 	if (tab->mark)
 	{
 		handle->mark = ClauseCopy(tab->mark, bank);
@@ -162,6 +167,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	{
 		handle->mark = NULL;
 	}
+	*/
 	if (tab->folding_labels)
 	{
 		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
@@ -229,7 +235,8 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent, int position)
 	handle->info = NULL;
 	handle->active_branch = NULL;
 	handle->set = NULL;
-	handle->mark = NULL;
+	handle->mark_int = 0;
+	//handle->mark = NULL;
 	handle->folding_labels = NULL;
 	handle->id = 0;
 	handle->head_lit = false;
@@ -265,7 +272,8 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->control = parent->control;
 	handle->max_var = parent->max_var;
 	handle->set = NULL;
-	handle->mark = NULL;
+	//handle->mark = NULL;
+	handle->mark_int = 0;
 	handle->folding_labels = NULL;
 	handle->info = NULL;
 	handle->active_branch = NULL;
@@ -300,10 +308,12 @@ void ClauseTableauFree(ClauseTableau_p trash)
 	{
 		DStrFree(trash->info);
 	}
+	/*
 	if (trash->mark)
 	{
 		ClauseFree(trash->mark);
 	}
+	*/
 	if (trash->folding_labels)
 	{
 		ClauseSetFree(trash->folding_labels);
@@ -611,6 +621,17 @@ void ClauseTableauPrint(ClauseTableau_p tab)
 	printf("\n# Done.\n");
 }
 
+bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node)
+{
+	ClauseTableau_p climber = node;
+	while (climber)
+	{
+		if (climber == tab) return true;
+		climber = climber->parent;
+	}
+	return false;
+}
+
 /*  Only call on closed tableau.  Collects the leaves (no children nodes).
  * 
 */
@@ -665,6 +686,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 		if ((subst = ClauseContradictsClause(tab, clause, unit_handle)))
 		{
 			ClauseFree(fresh_unit);
+			tab->mark_int = (tab->depth)-1; // mark the root node
 			return subst;
 		}
 		ClauseFree(fresh_unit);
@@ -674,17 +696,22 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	// Check against the tableau
 	if ((subst = ClauseContradictsClause(tab, tab->label, clause)))
 	{
+		tab->mark_int = 0; // this shouldn't happen- marking itself?
 		return subst;
 	}
-	while (tab->parent)
+	ClauseTableau_p temporary_tab = tab;
+	int distance_up = 1;
+	while (temporary_tab->parent)
 	{
-		parent_label = tab->parent->label;
+		parent_label = temporary_tab->parent->label;
 		if ((subst = ClauseContradictsClause(tab, parent_label, clause)))
 		{
+			tab->mark_int = distance_up;
+			printf("distance_up: %d\n", distance_up);
 			return subst;
 		}
-		assert(tab->master == tab->parent->master);
-		tab = tab->parent;
+		distance_up += 1;
+		temporary_tab = temporary_tab->parent;
 	}
 	
 	return subst;
@@ -721,7 +748,7 @@ void ClauseTableauPrintBranch(ClauseTableau_p branch)
 	{
 		assert(depth_check->label);
 		assert(depth_check->id >= 0);
-		printf("%d,%d,%ld ", depth_check->depth,depth_check->arity, depth_check->id);ClausePrint(GlobalOut, depth_check->label, true);
+		printf("%d,%d,%ld,%d ", depth_check->depth,depth_check->arity, depth_check->id,depth_check->mark_int);ClausePrint(GlobalOut, depth_check->label, true);
 		if (depth_check->head_lit)
 		{
 			printf(" x");
@@ -731,7 +758,7 @@ void ClauseTableauPrintBranch(ClauseTableau_p branch)
 	}
 	assert (depth_check->depth == 0);
 	assert (depth_check->label);
-	printf("%d,%d,%ld ", depth_check->depth,depth_check->arity, depth_check->id);ClausePrint(GlobalOut, depth_check->label, true);printf("\n");
+	printf("%d,%d,%ld,%d ", depth_check->depth,depth_check->arity, depth_check->id,depth_check->mark_int);ClausePrint(GlobalOut, depth_check->label, true);printf("\n");
 	printf("\033[0m");
 }
 

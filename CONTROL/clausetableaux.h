@@ -31,7 +31,7 @@ typedef struct clausetableau
 	Clause_p label;
 	ClauseSet_p unit_axioms;
 	
-	Clause_p mark;  // If the node is closed, this is the clause that was used to close it
+	//Clause_p mark;  // If the node is closed, this is the clause that was used to close it
 	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
 	
 	//ClauseSet_p passive;
@@ -149,6 +149,8 @@ ClauseTableau_p TableauMasterSetExtractEntry(ClauseTableau_p set);
 void TableauMasterSetFree(TableauSet_p handle);
 void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves);
 void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
+
+bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node);
 
 /*
  *  Tree positions... just arrays of ints

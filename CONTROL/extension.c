@@ -238,6 +238,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 		if (leaf_clause == head_literal_clause)
 		{
 			parent->children[p]->open = false; 
+			parent->children[p]->mark_int = 1;
 			parent->children[p]->head_lit = true;
 		}
 		else
