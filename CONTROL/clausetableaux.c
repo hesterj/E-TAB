@@ -19,6 +19,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->unit_axioms = NULL;
 	//handle->mark = NULL;
 	handle->mark_int = 0;
+	handle->folded_up = 0;
 	handle->folding_labels = NULL;
 	handle->set = NULL;
 	handle->head_lit = false;
@@ -67,16 +68,8 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->pred = NULL;
 	handle->id = tab->id;
 	handle->mark_int = tab->mark_int;
-	/*
-	if (tab->mark)
-	{
-		handle->mark = ClauseCopy(tab->mark, bank);
-	}
-	else
-	{
-		handle->mark = NULL;
-	}
-	*/
+	handle->folded_up = tab->folded_up;
+	assert(handle->folded_up == 0); // the master node should not be folded up
 	if (tab->folding_labels)
 	{
 		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
@@ -149,6 +142,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->signature = parent->signature;
 	handle->terms = parent->terms;
 	handle->mark_int = tab->mark_int;
+	handle->folded_up = tab->folded_up;
 	handle->parent = parent;
 	handle->master = parent->master;
 	handle->depth = 1+parent->depth;
@@ -158,16 +152,6 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->state = parent->state;
 	handle->open = tab->open;
 	handle->arity = tab->arity;
-	/*
-	if (tab->mark)
-	{
-		handle->mark = ClauseCopy(tab->mark, bank);
-	}
-	else
-	{
-		handle->mark = NULL;
-	}
-	*/
 	if (tab->folding_labels)
 	{
 		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
@@ -236,7 +220,7 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent, int position)
 	handle->active_branch = NULL;
 	handle->set = NULL;
 	handle->mark_int = 0;
-	//handle->mark = NULL;
+	handle->folded_up = 0;
 	handle->folding_labels = NULL;
 	handle->id = 0;
 	handle->head_lit = false;
@@ -272,8 +256,8 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->control = parent->control;
 	handle->max_var = parent->max_var;
 	handle->set = NULL;
-	//handle->mark = NULL;
 	handle->mark_int = 0;
+	handle->folded_up = 0;
 	handle->folding_labels = NULL;
 	handle->info = NULL;
 	handle->active_branch = NULL;
@@ -290,7 +274,6 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->state = parent->state;
 	handle->open = true;
 	handle->arity = 0;
-	assert(!handle->set);
 	return handle;
 }
 
@@ -682,7 +665,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	while (unit_handle != tab->unit_axioms->anchor)
 	{
 		assert(unit_handle);
-		Clause_p fresh_unit = ClauseCopyFresh(unit_handle, tab);
+		Clause_p fresh_unit = ClauseFlatCopyFresh(unit_handle, tab);
 		if ((subst = ClauseContradictsClause(tab, clause, unit_handle)))
 		{
 			ClauseFree(fresh_unit);
@@ -841,6 +824,76 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
    return handle;
 }
 
+/*-----------------------------------------------------------------------
+//
+// Function: ClauseFlatCopyFresh()
+//
+//   Create a variable-fresh FLAT copy of clause.  Every variable that is 
+//   in the clause is replaced with a fresh one.  variable_subst is the address of the 
+//   substitution replacing the old variables with new ones.  Must be free'd afterwards!
+//
+//	John Hester
+// Global Variables: -
+//
+// Side Effects    : Memory operations
+//
+/----------------------------------------------------------------------*/
+
+Clause_p ClauseFlatCopyFresh(Clause_p clause, ClauseTableau_p tableau)
+{
+   PTree_p variable_tree;
+   PStack_p variables;
+   PStackPointer p;
+   Subst_p subst;
+   Term_p old_var, fresh_var;
+   Clause_p handle;
+   VarBank_p variable_bank;
+   
+   assert(clause);
+   
+   variable_bank = clause->literals->bank->vars;
+   variables = PStackAlloc();
+   variable_tree = NULL;
+   //VarBankSetVCountsToUsed(variable_bank);
+   subst = SubstAlloc();
+   
+   ClauseCollectVariables(clause, &variable_tree);
+   PTreeToPStack(variables, variable_tree);
+   PTreeFree(variable_tree);
+   
+   //printf("Clause being copied: ");ClausePrint(GlobalOut, clause, true);printf("\n");
+   
+   for (p = 0; p < PStackGetSP(variables); p++)
+   {
+	   old_var = PStackElementP(variables, p);
+	   //fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
+	   //printf("tableau max var: %ld\n", tableau->master->max_var);
+	   tableau->master->max_var -= 2;
+	   fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
+	   assert(fresh_var != old_var);
+	   assert(fresh_var->f_code != old_var->f_code);
+	   if (fresh_var->f_code == old_var->f_code)
+	   {
+			//printf("continuing\n"); 
+			exit(0);
+			continue;
+		}
+	   SubstAddBinding(subst, old_var, fresh_var);
+	   //printf("The subst: %ld %ld\n", fresh_var->f_code, old_var->f_code);
+	   //SubstPrint(GlobalOut, subst, tableau->terms->sig, DEREF_NEVER);
+	   //printf("\n");
+   }
+   
+	//printf("max_var %ld\n", tableau->master->max_var);
+   
+   handle = ClauseFlatCopy(clause);
+   
+   SubstDelete(subst);
+   PStackFree(variables);
+
+   return handle;
+}
+
 
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 {
@@ -887,6 +940,13 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	EqnListFree(literals);
 	
 	return tab;
+}
+
+// The number of steps up one must go to reach higher from lower, if they are in the same branch.
+
+int ClauseTableauDifference(ClauseTableau_p higher, ClauseTableau_p lower)
+{
+	return (lower->depth - higher->depth);
 }
 
 // Goes through the children to tableau to ensure that all of the nodes have labels

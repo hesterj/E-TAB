@@ -81,6 +81,19 @@ ClauseTableau_p FoldingUpGetNodeFromMark(ClauseTableau_p tableau, int mark)
 	return tableau;
 }
 
+void ClauseTableauEdgeInsert(ClauseTableau_p edge, Clause_p clause)
+{
+	if (edge->folding_labels)
+	{
+		ClauseSetInsert(edge->folding_labels, clause);
+	}
+	else 
+	{
+		edge->folding_labels = ClauseSetAlloc();
+		ClauseSetInsert(edge->folding_labels, clause);
+	}
+}
+
 /*  Simple wrapper for CollectDominatedMarkings
 */
 
@@ -127,32 +140,75 @@ PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p mar
 	return dominating_nodes;
 }
 
-int FoldingUp(ClauseTableau_p node)
+/*
+ * 
+ * 
+*/
+
+int FoldUpAtNode(ClauseTableau_p node)
 {
+	assert(NodeIsNonLeaf(node));
+	assert(node->depth > 0); // do not fold up the master node
+	assert(node->label);
+	assert(ClauseLiteralNumber(node->label) == 1);
+	assert(ClauseTableauNodeIsClosed(node));
+	
+	//Easy situation- if the node has already been folded up to the root do nothing
+	if (node->mark_int == node->depth)
+	{
+		return 0;
+	}
+	
+	// Get the nodes that are eligible to fold up to
 	PStack_p dominated_markings = CollectDominatedMarkingsWrapper(node);
-	PStack_p dominators = NodesThatDominateTableauFromMarks(node, dominated_markings);
+	PStack_p dominators = NodesThatDominateTableauFromMarks(node, dominated_markings); // This may not be necessary, the markings of dominated nodes must come from the same branch?
 	PStackFree(dominated_markings);
+	
+	Clause_p flipped_label = NULL;
+	ClauseTableau_p master_node = node->master;
 	if ((PStackGetSP(dominators) == 0) ||
 		((PStackGetSP(dominators) == 1) && (PStackElementP(dominators,0) == node->master)))
 	{
 		// Case 1: Add the negation of the label of node to the literals at the root (node->master)
+		if (node->folded_up != node->depth) // Make sure we have not already folded to the root
+		{
+			flipped_label = ClauseCopy(node->label, node->terms);
+			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
+			node->folded_up = node->depth;
+			ClauseTableauEdgeInsert(master_node, flipped_label);
+		}
 	}
 	else
 	{
 		// Case 2: Get the deepest path node, add the negation of the label of the node to the parent of deepest
+		ClauseTableau_p previous_fold = FoldingUpGetNodeFromMark(node, node->folded_up);
 		ClauseTableau_p deepest = PStackGetDeepestTableauNode(dominators);
 		assert(deepest);
-		if (!(deepest->parent))
+		if (deepest->depth <= previous_fold->depth)
 		{
-			//  We are at the master node, probably because of unit axioms... Not quite case 2, 
+			// This node has already been folded up to the node deepest, or one higher, do nothing
+		}
+		else if (!(deepest->parent))
+		{
+			//  We are at the master node, probably because of unit axioms... fold up to it
+			flipped_label = ClauseCopy(node->label, node->terms);
+			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
+			node->folded_up = node->depth;
+			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
 		else
 		{
 			// The actual case 2
 			assert(deepest->depth > 0);
+			flipped_label = ClauseCopy(node->label, node->terms);
+			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
+			node->folded_up = ClauseTableauDifference(deepest, node);
+			ClauseTableauEdgeInsert(deepest->parent, flipped_label);
 		}
 		
 	}
+	
+	PStackFree(dominators);
 	return 1;
 }
 

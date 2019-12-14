@@ -18,56 +18,39 @@
 
 typedef struct clausetableau 
 {
-	PStack_p predicates;
-	PStack_p functions;
-	bool open;
-	int depth;
-	int position; // If the node is a child, this is its position in the children array of the parent
-	
-	// If the node has been closed by extension or reduction,
-	// mark_int is the number of steps up we need to go to get to what is marked.  0 means not marked.
-	int mark_int;  
-	
-	Clause_p label;
-	ClauseSet_p unit_axioms;
-	
-	//Clause_p mark;  // If the node is closed, this is the clause that was used to close it
-	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
-	
-	//ClauseSet_p passive;
-	//ClauseSet_p recently_active;
-	
-	DStr_p info;
-	long id;  // If a clause was split on a node, this is the id of the clause used to split.
-	bool head_lit;  //If this node was made as a head literal in an extension step, it is true.  Otherwise false.
-	
 	ProofState_p state;
 	ProofControl_p control;
-	long max_var; // f_code of the maximal variable in the tableau
-	
 	TB_p          terms;
 	Sig_p         signature;
+	bool open;
+	bool head_lit;  //If this node was made as a head literal in an extension step, it is true.  Otherwise false.
+	int depth;		// depth of the node in the tableau
+	int position;   // If the node is a child, this is its position in the children array of the parent
+	int arity;		// number of children
+	int mark_int;   // The number of steps up a node node was closed by.  0 if not closed by extension/closure
+	int folded_up;  // If the node has been folded up, this is the number of steps up it went
+	long id;  		// If a clause was split on a node, this is the id of the clause used to split.
+	long max_var;   // f_code of the maximal variable in the tableau
+	DStr_p info;
+	
+	Clause_p label;
+	ClauseSet_p unit_axioms; // Only present at the master node
+	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
 	
 	// Tableau set cell stuff...
-	struct tableau_set_cell* set;
+	struct tableau_set_cell* set; // the set of 
 	struct tableau_set_cell* master_set;  // For controlling sets of distinct tableau
-	struct tableau_set_cell* open_branches;
+	struct tableau_set_cell* open_branches; // the open branches that should be operated on
 	
-	struct clausetableau* active_branch; // active branch for making multiple copies of the same tableau
-	
-	struct clausetableau* pred;
+	// Poitners for navigating tableaux/sets of tableaux
+	struct clausetableau* active_branch; // active branch for keeping track of what branch is being extended
+	struct clausetableau* pred; // For navigating the set- used for open branches
 	struct clausetableau* succ;
-	struct clausetableau* master_pred;
+	struct clausetableau* master_pred; // For navigating the master set of distinct tableaux
 	struct clausetableau* master_succ;
-	
-	// Children
-	int arity;
-	struct clausetableau* *children;
-	
-	// Tableau pointers...
-	struct clausetableau* master;
-   struct clausetableau* parent;      
-	
+	struct clausetableau* parent; // parent node
+	struct clausetableau* *children;  //array of children
+	struct clausetableau* master; // root node of the tableau
 }ClauseTableau, *ClauseTableau_p;
 
 typedef PStack_p ClauseStack_p;
@@ -76,7 +59,6 @@ typedef PStack_p ClauseStack_p;
 #define ClauseTableauCellFree(junk) SizeFree(junk, sizeof(ClauseTableau))
 #define ClauseTableauArgArrayAlloc(arity) ((ClauseTableau_p*)SizeMalloc((arity)*sizeof(ClauseTableau_p)))
 #define ClauseTableauArgArrayFree(junk, arity) SizeFree((junk),(arity)*sizeof(ClauseTableau_p))
-//#define ClauseTableauArgArrayFree(junk) SizeFree(junk, sizeof())
 ClauseTableau_p ClauseTableauAlloc();
 void ClauseTableauInitialize(ClauseTableau_p handle, ProofState_p state);
 void ClauseTableauFree(ClauseTableau_p trash);
@@ -89,6 +71,7 @@ void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst);
 ClauseSet_p ClauseSetApplySubstitution(TB_p bank, ClauseSet_p set, Subst_p subst);
 FunCode ClauseSetGetMaxVar(ClauseSet_p set);
 Clause_p ClauseApplySubst(Clause_p clause,  TB_p bank, Subst_p subst);
+int ClauseTableauDifference(ClauseTableau_p higher, ClauseTableau_p lower);
 
 void ClauseTableauScoreActive(ClauseTableau_p tab);
 void ClauseTableauPrint(ClauseTableau_p tab);
@@ -97,6 +80,7 @@ void HCBClauseSetEvaluate(HCB_p hcb, ClauseSet_p clauses);
 
 ClauseSet_p ClauseSetCopy(TB_p bank, ClauseSet_p set);
 ClauseSet_p ClauseSetFlatCopy(TB_p bank, ClauseSet_p set);
+Clause_p ClauseFlatCopyFresh(Clause_p clause, ClauseTableau_p tableau);
 
 Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau);  // Major memory hog
 
@@ -104,6 +88,7 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);
 Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause);
 bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab);
+
 
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
 int ClauseTableauAssertCheck(ClauseTableau_p tab);
@@ -151,16 +136,6 @@ void ClauseTableauCollectLeaves(ClauseTableau_p tab, TableauSet_p leaves);
 void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
 
 bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node);
-
-/*
- *  Tree positions... just arrays of ints
-*/
-
-typedef struct tableau_position_cell
-{
-   int size;
-   int array[];
-}TableauPositionCell, *TableauPosition_p;
 
 
 #endif
