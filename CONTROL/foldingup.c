@@ -14,7 +14,8 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 	int arity = tableau->arity;
 	if (arity == 0)
 	{
-		return false;
+		//return false;
+		tableau->open;
 	}
 	bool all_children_closed = true;
 	// Check to see if all the children are actually superclosed
@@ -41,6 +42,10 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 	return false;
 }
 
+/*  Iterate through the nodes collected in stack,
+ *  return the deepest one.
+*/
+
 ClauseTableau_p PStackGetDeepestTableauNode(PStack_p stack)
 {
 	int deepest_depth = 0;
@@ -58,7 +63,7 @@ ClauseTableau_p PStackGetDeepestTableauNode(PStack_p stack)
 }
 
 /*  marks are the integer distance from a node to the dominating node it was closed with
- * 
+ *  Returns the clause labelling the mark'd node.
 */
 
 Clause_p FoldingUpGetLabelFromMark(ClauseTableau_p tableau, int mark)
@@ -71,6 +76,10 @@ Clause_p FoldingUpGetLabelFromMark(ClauseTableau_p tableau, int mark)
 	return tableau->label;
 }
 
+/*  Integer marks represent the distance up used for contradiction.
+ *  This returns the node at mark distance up from tableau.
+*/
+
 ClauseTableau_p FoldingUpGetNodeFromMark(ClauseTableau_p tableau, int mark)
 {
 	while (mark)
@@ -80,6 +89,11 @@ ClauseTableau_p FoldingUpGetNodeFromMark(ClauseTableau_p tableau, int mark)
 	}
 	return tableau;
 }
+
+/*  Insert the clause in to the edge.
+ *  If nothing has been folded up to this edge yet (edge is NULL),
+ *  then allocate a clause set for insertion.
+*/
 
 void ClauseTableauEdgeInsert(ClauseTableau_p edge, Clause_p clause)
 {
@@ -94,7 +108,8 @@ void ClauseTableauEdgeInsert(ClauseTableau_p edge, Clause_p clause)
 	}
 }
 
-/*  Simple wrapper for CollectDominatedMarkings
+/*  Simple wrapper for CollectDominatedMarkings.
+ *  Returns a stack of pointers to the markings of nodes dominated by "tableau"
 */
 
 PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
@@ -105,7 +120,8 @@ PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
 }
 
 /*  For all of the nodes below tableau, collect the markings in to 
- *  the stack.  As used in folding up, all of the branches below
+ *  the stack.  
+ *  Used for folding up, all of the branches below
  *  should have a marking at the leaf, as they have been closed by an extension 
  *  step or a closure (reduction) rule.
 */
@@ -124,7 +140,10 @@ void CollectDominatedMarkings(ClauseTableau_p tableau, PStack_p stack)
 	}
 }
 
-
+/*  From the stack of nodes "marks", collect the ones that dominate
+ *  the tableau node "tableau"
+ * 
+*/
 
 PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p marks)
 {
@@ -140,9 +159,12 @@ PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p mar
 	return dominating_nodes;
 }
 
-/*
+/*  Follow the folding up rule from Handbook of Automated Reasoning Vol. 2
+ *  Returns the number of nodes the label was folded up, 
+ *  returns 0 if not able to fold up.
  * 
- * 
+ *  If the node has already been folded up to the eligible node, or one lower,
+ *  the node will not be folded up and 0 will be returned.
 */
 
 int FoldUpAtNode(ClauseTableau_p node)
@@ -209,6 +231,6 @@ int FoldUpAtNode(ClauseTableau_p node)
 	}
 	
 	PStackFree(dominators);
-	return 1;
+	return node->folded_up;
 }
 

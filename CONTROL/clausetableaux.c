@@ -659,7 +659,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	assert(tab->label);
 	assert(tab->unit_axioms);
 	Subst_p subst = NULL;
-	Clause_p parent_label;
+	Clause_p temporary_label;
 	// Check against the unit axioms
 	Clause_p unit_handle = tab->unit_axioms->anchor->succ;
 	while (unit_handle != tab->unit_axioms->anchor)
@@ -676,26 +676,33 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 		unit_handle = unit_handle->succ;
 	}
 	
-	// Check against the tableau
-	if ((subst = ClauseContradictsClause(tab, tab->label, clause)))
-	{
-		tab->mark_int = 0; // this shouldn't happen- marking itself?
-		return subst;
-	}
+	// Check against the tableau AND its edges
 	ClauseTableau_p temporary_tab = tab;
-	int distance_up = 1;
-	while (temporary_tab->parent)
+	int distance_up = 0;
+	while (temporary_tab)
 	{
-		parent_label = temporary_tab->parent->label;
-		if ((subst = ClauseContradictsClause(tab, parent_label, clause)))
+		temporary_label = temporary_tab->label;
+		if ((subst = ClauseContradictsClause(tab, temporary_label, clause)))
 		{
 			tab->mark_int = distance_up;
-			printf("distance_up: %d\n", distance_up);
+			//printf("distance_up: %d\n", distance_up);
 			return subst;
 		}
+		/*
+		if (temporary_tab->folding_labels)
+		{
+			if (subst = ClauseContradictsSet(temporary_tab, clause, temporary_tab->folding_labels))
+			{
+				tab->mark_int = distance_up;
+				//printf("distance_up: %d\n", distance_up);
+				return subst;
+			}
+		}
+		*/
 		distance_up += 1;
 		temporary_tab = temporary_tab->parent;
 	}
+	
 	
 	return subst;
 }
@@ -736,6 +743,11 @@ void ClauseTableauPrintBranch(ClauseTableau_p branch)
 		{
 			printf(" x");
 		}
+		if (!depth_check->open)
+		{
+			printf(" c");
+		}
+		
 		printf("\n");
 		depth_check = depth_check->parent;
 	}

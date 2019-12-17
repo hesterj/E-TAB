@@ -99,13 +99,12 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 100000;
+	long MAX_TABLEAUX = 2500000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		printf("# Number of distinct tableaux: %ld Closed: %d\n", distinct_tableaux->members,
-																					ClauseTableauMarkClosedNodes(active_tableau));
+		printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (control->closed_tableau)
 		{
 			printf("Success\n");
@@ -143,6 +142,11 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				open_branch->open = false;
 				open_branch = open_branch->succ;
 				TableauSetExtractEntry(open_branch->pred);
+				if (ClauseTableauMarkClosedNodes(open_branch->parent))
+				{
+					//int folded_up = FoldUpAtNode(open_branch->parent);
+					//printf("Folded up %d nodes after closure rule\n", folded_up);
+				}
 				if (active_tableau->open_branches->members == 0)
 				{
 					control->closed_tableau = open_branch->master;

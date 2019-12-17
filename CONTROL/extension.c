@@ -189,7 +189,12 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(old_tableau_master->parent == NULL);
 	assert(distinct_tableaux);
 	assert(tableau_copy->open_branches);
-	assert(tableau_copy->open_branches->members > 0);
+	//assert(tableau_copy->open_branches->members > 0);
+	if (tableau_copy->open_branches->members == 0)
+	{
+		printf("Doing an extension step with no open branches error.  Printing tableau.\n");
+		ClauseTableauPrint(tableau_copy);
+	}
 	assert(tableau_copy->active_branch);
 	assert(tableau_copy->master == tableau_copy);
 	assert(extension->selected);
@@ -261,7 +266,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	{
 		TableauMasterSetInsert(distinct_tableaux, parent->master);
 	}
-
 	
 	// The work is done- try to close the remaining branches
 	SubstDelete(extension->subst);
@@ -277,9 +281,23 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			}
 		}
 	}
+	
+	// Try to fold up since we have done extension/cosure steps
+	assert(parent->arity > 0);  // Since we did an extension step, there should be children
+	if (ClauseTableauMarkClosedNodes(parent))
+	{
+		//int folded_up = FoldUpAtNode(parent);
+		//printf("# Folded up %d nodes\n", folded_up);
+	}
+	
+	if (parent->open_branches->members == 0)
+	{
+		printf("Closed tableau found?\n");
+	}
+	
 	assert(number_of_children == parent->arity);
 	assert(parent->set);
-	assert(parent->open);
+	//assert(parent->open);
 	assert(parent->arity == number_of_children);
 	TableauSetExtractEntry(parent);
 	//parent->open = false;
@@ -350,6 +368,9 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		}
 		leaf_clause = leaf_clause->succ;
 	}
+	
+	// Do not work here.  The tableau of open branch has been copied and worked on. 
+	// The current open branch is now "old" and will only be used for other extensions.
    
    //  OK We're done
    ClauseSetFree(new_leaf_clauses);

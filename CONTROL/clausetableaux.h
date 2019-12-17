@@ -94,8 +94,8 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
 int ClauseTableauAssertCheck(ClauseTableau_p tab);
 
 
-#define NodeIsLeaf(tab) (tab->arity != 0)
-#define NodeIsNonLeaf(tab) (tab->arity == 0)
+#define NodeIsLeaf(tab) (tab->arity == 0)
+#define NodeIsNonLeaf(tab) (tab->arity != 0)
 
 
 /*  Now for tableau sets...
