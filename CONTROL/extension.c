@@ -287,7 +287,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	if (ClauseTableauMarkClosedNodes(parent))
 	{
 		int folded_up = FoldUpAtNode(parent);
-		ClauseTableauPrint(parent->master);printf("\n");
+		//ClauseTableauPrint(parent->master);printf("\n");
 		printf("# Folded up %d nodes\n", folded_up);
 	}
 	

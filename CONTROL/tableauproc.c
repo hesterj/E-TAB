@@ -142,6 +142,10 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				open_branch->open = false;
 				open_branch = open_branch->succ;
 				TableauSetExtractEntry(open_branch->pred);
+				if (open_branch->parent == NULL)
+				{
+					printf("Open branch is the root node- danger.\n");
+				}
 				if (ClauseTableauMarkClosedNodes(open_branch->parent))
 				{
 					printf("Was able to close an open branch after marking closed, %ld remaining.\n", open_branch->open_branches->members);

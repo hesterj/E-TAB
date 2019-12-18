@@ -182,6 +182,7 @@ typedef enum
    OPT_APP_ENCODE,
    OPT_TABLEAU,
    OPT_TABLEAU_DEPTH,
+   OPT_TABLEAU_BATCH,
    OPT_DUMMY
 }OptionCodes;
 
@@ -1377,6 +1378,14 @@ OptCell opts[] =
 		 "Specify an integer."
 		 "This is the max depth of tableaux used in proof search."
 		 "Default is 2, which will likely not work often."
+	 },
+	 {
+		 OPT_TABLEAU_BATCH,
+		 '\0', "tableau-batch",
+		 OptArg, "1",
+		 "Specify an integer."
+		 "0 means we will process tableau serially.  This saves memory, but can take longer for proof success."
+		 "The default 1 causes proof search in batch mode, which works better and uses more memory."
 	 },
 
    {OPT_NOOPT,

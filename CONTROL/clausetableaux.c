@@ -397,6 +397,14 @@ void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst)
 	assert(new_label);
 	tab->label = new_label;
 	
+	if (tab->folding_labels)  // The edge labels that have been folded up if the pointer is non-NULL
+	{
+		ClauseSet_p new_edge = ClauseSetCopy(tab->terms, tab->folding_labels);
+		ClauseSetFree(tab->folding_labels);
+		assert(new_edge);
+		tab->folding_labels = new_edge;
+	}
+	
 	for (int i=0; i<tab->arity; i++)
 	{
 		ClauseTableauApplySubstitutionToNode(tab->children[i], subst);
@@ -604,9 +612,15 @@ void ClauseTableauPrint(ClauseTableau_p tab)
 	printf("\n# Done.\n");
 }
 
+/*  Checks to see if the node dominates tab, properly.
+ *  i/e if they are the same, return false;
+ * 
+*/
+
 bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node)
 {
-	ClauseTableau_p climber = node;
+	if (tab == node) return false;
+	ClauseTableau_p climber = node->parent;
 	while (climber)
 	{
 		if (climber == tab) return true;

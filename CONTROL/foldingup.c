@@ -7,6 +7,7 @@
 bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 {
 	//printf("Attempting to mark a new node.");
+	assert(tableau);
 	if (tableau->set)
 	{
 		//printf("Found an open branch while attempting to mark nodes as closed.\n");
@@ -26,6 +27,7 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 	//printf("Marking children.\n");
 	for (int i = 0; i < arity; i++)
 	{
+			assert(tableau->children[i]);
 			ClauseTableau_p child = tableau->children[i];
 			bool child_is_superclosed = ClauseTableauMarkClosedNodes(child);
 			if (!child_is_superclosed) // there is a child that is open or whose children are open
@@ -140,9 +142,10 @@ PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
 
 void CollectDominatedMarkings(ClauseTableau_p original, ClauseTableau_p tableau, PStack_p stack)
 {
-	printf("Mark int of a node dominated by the tableau: %d\n", tableau->mark_int);
 	if (tableau->mark_int > 0)
 	{
+		assert(NodeIsLeaf(tableau));
+		printf("Mark int of a leaf node dominated by the tableau: %d\n", tableau->mark_int);
 		ClauseTableau_p mark = FoldingUpGetNodeFromMark(tableau, tableau->mark_int);
 		if (mark->depth < original->depth)
 		{
@@ -171,6 +174,7 @@ PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p mar
 			PStackPushP(dominating_nodes, mark);
 		}
 	}
+	printf("Number of dominating nodes from marks: %ld\n", PStackGetSP(dominating_nodes));
 	return dominating_nodes;
 }
 
@@ -193,8 +197,12 @@ int FoldUpAtNode(ClauseTableau_p node)
 	//Easy situation- if the node has already been folded up to the root do nothing
 	if (node->mark_int == node->depth)
 	{
+		printf("Node has already been folded up to root.\n");
 		return 0;
 	}
+	
+	printf("Label of node we are trying to fold up: ");
+	ClausePrint(GlobalOut, node->label, true);printf("\n");
 	
 	// Get the nodes that are eligible to fold up to
 	PStack_p dominated_markings = CollectDominatedMarkingsWrapper(node);
@@ -206,6 +214,7 @@ int FoldUpAtNode(ClauseTableau_p node)
 	if ((PStackGetSP(dominators) == 0) ||
 		((PStackGetSP(dominators) == 1) && (PStackElementP(dominators,0) == node->master)))
 	{
+		printf("Case 1, folding up to root.\n");
 		// Case 1: Add the negation of the label of node to the literals at the root (node->master)
 		if (node->folded_up != node->depth) // Make sure we have not already folded to the root
 		{
@@ -221,13 +230,18 @@ int FoldUpAtNode(ClauseTableau_p node)
 		ClauseTableau_p previous_fold = FoldingUpGetNodeFromMark(node, node->folded_up);
 		ClauseTableau_p deepest = PStackGetDeepestTableauNode(dominators);
 		assert(deepest);
-		if (deepest->depth <= previous_fold->depth)
+		printf("Case 2, folding up to the deepest mark-originated dominating path node.\n");
+		if ((node->folded_up != 0)   // Doesn't matter if the node has not been folded up yet
+			  && (deepest->depth <= previous_fold->depth))
 		{
 			// This node has already been folded up to the node deepest, or one higher, do nothing
+			printf("This node has been folded up to the node deepest, or one higher, do nothing\n");
+			printf("Deepest dominator depth: %d Previous fold depth: %d\n", deepest->depth, previous_fold->depth);
 		}
 		else if (!(deepest->parent))
 		{
 			//  We are at the master node, probably because of unit axioms... fold up to it
+			printf("Folding up to master node.\n");
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
 			node->folded_up = node->depth;
@@ -237,9 +251,10 @@ int FoldUpAtNode(ClauseTableau_p node)
 		{
 			// The actual case 2
 			assert(deepest->depth > 0);
+			node->folded_up = ClauseTableauDifference(deepest, node);
+			printf("Folding up to nonmaster node of difference %d\n.", node->folded_up);
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			node->folded_up = ClauseTableauDifference(deepest, node);
 			ClauseTableauEdgeInsert(deepest->parent, flipped_label);
 		}
 		

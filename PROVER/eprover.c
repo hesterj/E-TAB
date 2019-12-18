@@ -100,6 +100,7 @@ pid_t              pid = 0;
 
 int TableauOptions = 0; // John
 int TableauDepth = 2;
+int TableauBatch = 1;
 
 FunctionProperties free_symb_prop = FPIgnoreProps;
 
@@ -540,15 +541,27 @@ int main(int argc, char* argv[])
    // if the problem is HO -> we have to use KBO6
    assert(problemType != PROBLEM_HO || proofcontrol->ocb->type == KBO6);
 #endif
-	
-	proofstate->tableauoptions = TableauOptions;
-	proofstate->tableaudepth = TableauDepth;
-	srand(time(0));
+
 	if (TableauOptions == 1)
 	{
+		proofstate->tableauoptions = TableauOptions;
+		proofstate->tableaudepth = TableauDepth;
+		srand(time(0));
 		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
 		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
-		success = ConnectionTableauSerial(tableau_terms, new_axioms, TableauDepth);
+		if (TableauBatch == 1)
+		{
+			success = ConnectionTableauBatch(tableau_terms, new_axioms, TableauDepth);
+		}
+		else if (TableauBatch == 0)
+		{
+			success = ConnectionTableauSerial(tableau_terms, new_axioms, TableauDepth);
+		}
+		else
+		{
+			printf("Invalid tableau batch argument\n");
+			exit(0);
+		}
 		if (success)
 		{
 			PStackPushP(proofstate->extract_roots, EmptyClauseAlloc());
@@ -918,6 +931,9 @@ CLState_p process_options(int argc, char* argv[])
 		case OPT_TABLEAU_DEPTH:
 				TableauDepth = CLStateGetIntArg(handle, arg);
 				printf("Tableau max depth of %d.\n", TableauDepth);
+				break;
+		case OPT_TABLEAU_BATCH:
+				TableauBatch = CLStateGetIntArg(handle, arg);
 				break;
       case OPT_VERBOSE:
             Verbose = CLStateGetIntArg(handle, arg);
