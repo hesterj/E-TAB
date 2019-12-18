@@ -144,8 +144,9 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				TableauSetExtractEntry(open_branch->pred);
 				if (ClauseTableauMarkClosedNodes(open_branch->parent))
 				{
-					//int folded_up = FoldUpAtNode(open_branch->parent);
-					//printf("Folded up %d nodes after closure rule\n", folded_up);
+					printf("Was able to close an open branch after marking closed, %ld remaining.\n", open_branch->open_branches->members);
+					int folded_up = FoldUpAtNode(open_branch->parent);
+					printf("Folded up %d nodes after closure rule\n", folded_up);
 				}
 				if (active_tableau->open_branches->members == 0)
 				{

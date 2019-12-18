@@ -7,7 +7,7 @@ bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau);
 #define ClauseTableauNodeIsClosed(tab) ClauseTableauMarkClosedNodes(tab)
 
 PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau);
-void CollectDominatedMarkings(ClauseTableau_p tableau, PStack_p stack);
+void CollectDominatedMarkings(ClauseTableau_p original, ClauseTableau_p tableau, PStack_p stack);
 
 PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p marks);
 

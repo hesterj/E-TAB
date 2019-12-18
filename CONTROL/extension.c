@@ -286,8 +286,9 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(parent->arity > 0);  // Since we did an extension step, there should be children
 	if (ClauseTableauMarkClosedNodes(parent))
 	{
-		//int folded_up = FoldUpAtNode(parent);
-		//printf("# Folded up %d nodes\n", folded_up);
+		int folded_up = FoldUpAtNode(parent);
+		ClauseTableauPrint(parent->master);printf("\n");
+		printf("# Folded up %d nodes\n", folded_up);
 	}
 	
 	if (parent->open_branches->members == 0)

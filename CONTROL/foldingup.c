@@ -6,19 +6,24 @@
 
 bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau)
 {
+	//printf("Attempting to mark a new node.");
+	if (tableau->set)
+	{
+		//printf("Found an open branch while attempting to mark nodes as closed.\n");
+	}
 	if (!tableau->open)
 	{
-		//printf("tableau is marked as closed\n");
+		//printf("Tableau has !tableau->open.\n");
 		return true;
 	}
 	int arity = tableau->arity;
 	if (arity == 0)
 	{
-		//return false;
-		tableau->open;
+		return false;
 	}
 	bool all_children_closed = true;
 	// Check to see if all the children are actually superclosed
+	//printf("Marking children.\n");
 	for (int i = 0; i < arity; i++)
 	{
 			ClauseTableau_p child = tableau->children[i];
@@ -110,12 +115,13 @@ void ClauseTableauEdgeInsert(ClauseTableau_p edge, Clause_p clause)
 
 /*  Simple wrapper for CollectDominatedMarkings.
  *  Returns a stack of pointers to the markings of nodes dominated by "tableau"
+ *  The first parameter is kept as the first node we are calling this function from.
 */
 
 PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
 {
 	PStack_p dominated_markings = PStackAlloc();
-	CollectDominatedMarkings(tableau, dominated_markings);
+	CollectDominatedMarkings(tableau, tableau, dominated_markings);
 	return dominated_markings;
 }
 
@@ -124,19 +130,28 @@ PStack_p CollectDominatedMarkingsWrapper(ClauseTableau_p tableau)
  *  Used for folding up, all of the branches below
  *  should have a marking at the leaf, as they have been closed by an extension 
  *  step or a closure (reduction) rule.
+ * 
+ *  The original node is kept track of to ensure that we only add markings of 
+ *  dominated nodes that are above the original node.  Otherwise,
+ *  any node closed by an extension step cannot be folded up as it has a 
+ *  mark_int of 1.
 */
 
 
-void CollectDominatedMarkings(ClauseTableau_p tableau, PStack_p stack)
+void CollectDominatedMarkings(ClauseTableau_p original, ClauseTableau_p tableau, PStack_p stack)
 {
+	printf("Mark int of a node dominated by the tableau: %d\n", tableau->mark_int);
 	if (tableau->mark_int > 0)
 	{
 		ClauseTableau_p mark = FoldingUpGetNodeFromMark(tableau, tableau->mark_int);
-		PStackPushP(stack, mark);
+		if (mark->depth < original->depth)
+		{
+			PStackPushP(stack, mark);
+		}
 	}
 	for (int i=0; i<tableau->arity; i++)
 	{
-		CollectDominatedMarkings(tableau->children[i], stack);
+		CollectDominatedMarkings(original, tableau->children[i], stack);
 	}
 }
 
