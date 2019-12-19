@@ -144,9 +144,15 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				TableauSetExtractEntry(open_branch->pred);
 				if (open_branch->parent == NULL)
 				{
-					printf("Open branch is the root node- danger.\n");
+					printf("Closed root node? danger. %ld remaining.\n", active_tableau->open_branches->members);
+					if (open_branch == active_tableau->open_branches->anchor)
+					{
+						printf("Iterated all the way to the anchor...\n");
+					}
+					ClauseTableauPrint(open_branch);
+					exit(0);
 				}
-				if (ClauseTableauMarkClosedNodes(open_branch->parent))
+				if ((open_branch->parent != NULL) && (ClauseTableauMarkClosedNodes(open_branch->parent)))
 				{
 					printf("Was able to close an open branch after marking closed, %ld remaining.\n", open_branch->open_branches->members);
 					int folded_up = FoldUpAtNode(open_branch->parent);

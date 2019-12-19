@@ -702,7 +702,6 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 			//printf("distance_up: %d\n", distance_up);
 			return subst;
 		}
-		/*
 		if (temporary_tab->folding_labels)
 		{
 			if (subst = ClauseContradictsSet(temporary_tab, clause, temporary_tab->folding_labels))
@@ -712,7 +711,6 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 				return subst;
 			}
 		}
-		*/
 		distance_up += 1;
 		temporary_tab = temporary_tab->parent;
 	}
@@ -747,6 +745,7 @@ bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab)
 void ClauseTableauPrintBranch(ClauseTableau_p branch)
 {
 	ClauseTableau_p depth_check = branch;
+	assert(depth_check);
 	printf("\033[1;33m");
 	while (depth_check->depth != 0)
 	{
