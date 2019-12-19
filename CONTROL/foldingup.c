@@ -264,3 +264,22 @@ int FoldUpAtNode(ClauseTableau_p node)
 	return node->folded_up;
 }
 
+/*
+ * Folds up the entire tableau- attempting to fold up at every node below, and including, tableau.
+ * Does not fold up edges.
+ * 
+ * Returns number of nodes that were successfully folded up.
+*/
+
+
+int FoldUpEntireTableau(ClauseTableau_p tableau)
+{
+	int number_of_nodes_folded = 0;
+	FoldUpAtNode(tableau);
+	for (int i=0; i<tableau->arity; i++)
+	{
+		number_of_nodes_folded += FoldUpEntireTableau(tableau->children[i]);
+	}
+	return number_of_nodes_folded;
+}
+
