@@ -551,10 +551,12 @@ int main(int argc, char* argv[])
 		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
 		if (TableauBatch == 1)
 		{
+			printf("# Tableau batch search.\n");
 			success = ConnectionTableauBatch(tableau_terms, new_axioms, TableauDepth);
 		}
 		else if (TableauBatch == 0)
 		{
+			printf("# Tableau serial search.\n");
 			success = ConnectionTableauSerial(tableau_terms, new_axioms, TableauDepth);
 		}
 		else

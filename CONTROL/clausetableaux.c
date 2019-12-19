@@ -704,10 +704,11 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 		}
 		if (temporary_tab->folding_labels)
 		{
-			if (subst = ClauseContradictsSet(temporary_tab, clause, temporary_tab->folding_labels))
+			printf("Checking for edge contradiction.\n");
+			if ((subst = ClauseContradictsSet(temporary_tab, clause, temporary_tab->folding_labels)))
 			{
 				tab->mark_int = distance_up;
-				//printf("distance_up: %d\n", distance_up);
+				printf("Edge contradiction found.\n");
 				return subst;
 			}
 		}

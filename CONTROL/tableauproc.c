@@ -99,12 +99,12 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	long old_number_of_distinct_tableaux = distinct_tableaux->members;
 	assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 2500000;
+	long MAX_TABLEAUX = 8000000;
 	
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (control->closed_tableau)
 		{
 			printf("Success\n");
@@ -142,15 +142,9 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				open_branch->open = false;
 				open_branch = open_branch->succ;
 				TableauSetExtractEntry(open_branch->pred);
-				if (open_branch->parent == NULL)
+				if (open_branch == active_tableau->open_branches->anchor)
 				{
-					printf("Closed root node? danger. %ld remaining.\n", active_tableau->open_branches->members);
-					if (open_branch == active_tableau->open_branches->anchor)
-					{
-						printf("Iterated all the way to the anchor...\n");
-					}
-					ClauseTableauPrint(open_branch);
-					exit(0);
+					open_branch = open_branch->succ;
 				}
 				if ((open_branch->parent != NULL) && (ClauseTableauMarkClosedNodes(open_branch->parent)))
 				{
