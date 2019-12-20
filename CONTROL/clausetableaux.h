@@ -137,5 +137,7 @@ void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
 
 bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node);
 
+int AttemptClosureRuleOnAllOpenBranches(ClauseTableau_p tableau);
+
 
 #endif

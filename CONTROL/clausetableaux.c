@@ -1131,3 +1131,36 @@ void TableauMasterSetFree(TableauSet_p set)
 	ClauseTableauFree(set->anchor);
 	TableauSetCellFree(set);
 }
+
+/*
+ *  Attempt closure rule on all the open branches of the tableau.
+ *  Returns the total number of closures that were accomplished.
+ *  If there are no more open branches (a closed tableau was found),
+ *  return the negative of the total number of branches closed.
+*/
+
+int AttemptClosureRuleOnAllOpenBranches(ClauseTableau_p tableau)
+{
+	int num_branches_closed = 0;
+	ClauseTableau_p open_branch = tableau->open_branches->anchor->succ;
+	if (ClauseTableauBranchClosureRuleWrapper(open_branch))
+	{
+		num_branches_closed += 1;
+		open_branch->open = false;
+		open_branch = open_branch->succ;
+		TableauSetExtractEntry(open_branch->pred);
+		if (open_branch == tableau->open_branches->anchor)
+		{
+			open_branch = open_branch->succ;
+		}
+		if (tableau->open_branches->members == 0)
+		{
+			return -num_branches_closed;
+		}
+	}
+	else
+	{
+		open_branch = open_branch->succ;
+	}
+	return num_branches_closed;
+}

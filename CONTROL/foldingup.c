@@ -188,11 +188,19 @@ PStack_p NodesThatDominateTableauFromMarks(ClauseTableau_p tableau, PStack_p mar
 
 int FoldUpAtNode(ClauseTableau_p node)
 {
-	assert(NodeIsNonLeaf(node));
-	assert(node->depth > 0); // do not fold up the master node
 	assert(node->label);
 	assert(ClauseLiteralNumber(node->label) == 1);
-	assert(ClauseTableauNodeIsClosed(node));
+	
+	// Do not fold up the master node
+	if (node->depth == 0) return 0;
+	// Do not fold up leaf nodes
+	if (NodeIsLeaf(node)) return 0;
+	// Do not fold up nodes that are not superclosed
+	if (!ClauseTableauNodeIsClosed(node))
+	{
+		printf("Attempted to fold up nonclosed node, returning 0 in FoldUpAtNode\n");
+		return 0;
+	}
 	
 	//Easy situation- if the node has already been folded up to the root do nothing
 	if (node->mark_int == node->depth)
@@ -272,14 +280,46 @@ int FoldUpAtNode(ClauseTableau_p node)
 */
 
 
-int FoldUpEntireTableau(ClauseTableau_p tableau)
+int FoldUpEveryNodeOnce(ClauseTableau_p tableau)
 {
 	int number_of_nodes_folded = 0;
 	FoldUpAtNode(tableau);
 	for (int i=0; i<tableau->arity; i++)
 	{
-		number_of_nodes_folded += FoldUpEntireTableau(tableau->children[i]);
+		number_of_nodes_folded += FoldUpEveryNodeOnce(tableau->children[i]);
 	}
 	return number_of_nodes_folded;
+}
+
+/*
+ * This method attempts to fold up all the nodes of a tableau,
+ * and then tries to use closure/reduction rule on the open branches of
+ * the tableau.  If any closure steps were done, try to fold up 
+ * every node again and close the remaining open branches.  
+ * If all the nodes were folded up and no new closures are possible, 
+ * return the total number of closures accomplished.
+ * 
+ * If a closed tableau was found, return the negative of the total 
+ * number of closures accomplished.  This means there is a closed
+ * tableau, which is proof success.
+*/
+
+int FoldUpCloseCycle(ClauseTableau_p tableau)
+{
+	int total_closures_done = 0;
+	int closures_done = 0;
+	int folding_ups_done = 0;
+	do
+	{
+		closures_done = 0;
+		FoldUpEveryNodeOnce(tableau);
+		closures_done = AttemptClosureRuleOnAllOpenBranches(tableau);
+		if (closures_done < 0)
+		{
+			assert(tableau->open_branches->members == 0);
+			return -total_closures_done;
+		}
+	} while (closures_done > 0);
+	return total_closures_done;
 }
 

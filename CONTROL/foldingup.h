@@ -16,9 +16,11 @@ ClauseTableau_p FoldingUpGetNodeFromMark(ClauseTableau_p tableau, int mark);
 
 ClauseTableau_p PStackGetDeepestTableauNode(PStack_p stack);
 
-int FoldUpEntireTableau(ClauseTableau_p tableau);
-
 int FoldUpAtNode(ClauseTableau_p node);
+int FoldUpEveryNodeOnce(ClauseTableau_p tableau);
+
+int FoldUpCloseCycle(ClauseTableau_p tableau);
+
 void ClauseTableauEdgeInsert(ClauseTableau_p edge, Clause_p clause);
 
 #endif

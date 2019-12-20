@@ -131,6 +131,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
+			printf("Attempting foldup close cycle\n");
+			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
 			number_of_extensions = 0;
 			if (ClauseTableauBranchClosureRuleWrapper(open_branch))
 			{
@@ -146,6 +148,10 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				{
 					open_branch = open_branch->succ;
 				}
+				
+				printf("Attempting foldup close cycle\n");
+				int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
+				
 				if ((open_branch->parent != NULL) && (ClauseTableauMarkClosedNodes(open_branch->parent)))
 				{
 					printf("Was able to close an open branch after marking closed, %ld remaining.\n", open_branch->open_branches->members);
@@ -452,5 +458,11 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}
+	return NULL;
+}
+
+ClauseTableau_p ConnectionTableauPostSearch(TableauSet_p distinct_tableaux, int max_depth)
+{
+	ClauseTableau_p handle = distinct_tableaux->anchor->master_succ;
 	return NULL;
 }
