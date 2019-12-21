@@ -131,11 +131,31 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
-			printf("Attempting foldup close cycle\n");
 			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
+			printf("Foldup close cycle: %d\n", fold_close_cycle_test);
+			if (fold_close_cycle_test > 0)
+			{
+				printf("Branches closed, resetting to first open branch.\n");
+				open_branch = active_tableau->open_branches->anchor->succ;
+			}
+			else if (fold_close_cycle_test == 0)
+			{
+				printf("No branches could be closed in fold-close cycle.\n");
+			}
+			else
+			{
+				printf("Closed tableau found in fold-close cycle.\n");
+				assert(active_tableau->open_branches->members == 0);
+				bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
+				printf("# Closed tableau found! %d\n", all_branches_closed);
+				ClauseTableauPrint(active_tableau);
+				return active_tableau;
+			}
 			number_of_extensions = 0;
+			/*
 			if (ClauseTableauBranchClosureRuleWrapper(open_branch))
 			{
+				printf("Open branch closed outside of foldup close cycle???\n");
 				assert(open_branch);
 				assert(open_branch->open_branches);
 				assert(open_branch->open_branches->members >= 0);
@@ -148,9 +168,6 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				{
 					open_branch = open_branch->succ;
 				}
-				
-				printf("Attempting foldup close cycle\n");
-				int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
 				
 				if ((open_branch->parent != NULL) && (ClauseTableauMarkClosedNodes(open_branch->parent)))
 				{
@@ -174,6 +191,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				open_branch = open_branch->succ;
 				continue;
 			}
+			*/
 			Clause_p selected = extension_candidates->anchor->succ;
 			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
 			{
