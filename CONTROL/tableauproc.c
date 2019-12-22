@@ -398,9 +398,10 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    assert(number_of_units == unit_axioms->members);
    if (extension_candidates->members == 0)
    {
-		ClauseSetFree(unit_axioms);
-		ClauseSetFree(extension_candidates);
-		return NULL;
+		//ClauseSetFree(unit_axioms);
+		//ClauseSetFree(extension_candidates);
+		//return NULL;
+		ClauseSetInsertSet(extension_candidates, unit_axioms);
 	}
    
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
