@@ -19,7 +19,7 @@ long dive_depth = 10;
 // Function: ClauseSetMoveNonUnits()
 //
 //   Move all unit-clauses from set to nonunits, return number of
-//   clauses moved.
+//   clauses moved.xc
 //
 // Global Variables: -
 //
@@ -152,46 +152,6 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				return active_tableau;
 			}
 			number_of_extensions = 0;
-			/*
-			if (ClauseTableauBranchClosureRuleWrapper(open_branch))
-			{
-				printf("Open branch closed outside of foldup close cycle???\n");
-				assert(open_branch);
-				assert(open_branch->open_branches);
-				assert(open_branch->open_branches->members >= 0);
-				
-				printf("# Branch closed with closure rule. %ld remaining.\n", active_tableau->open_branches->members);
-				open_branch->open = false;
-				open_branch = open_branch->succ;
-				TableauSetExtractEntry(open_branch->pred);
-				if (open_branch == active_tableau->open_branches->anchor)
-				{
-					open_branch = open_branch->succ;
-				}
-				
-				if ((open_branch->parent != NULL) && (ClauseTableauMarkClosedNodes(open_branch->parent)))
-				{
-					printf("Was able to close an open branch after marking closed, %ld remaining.\n", open_branch->open_branches->members);
-					int folded_up = FoldUpAtNode(open_branch->parent);
-					printf("Folded up %d nodes after closure rule\n", folded_up);
-				}
-				if (active_tableau->open_branches->members == 0)
-				{
-					control->closed_tableau = open_branch->master;
-					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
-					printf("All branches closed... %d\n", all_branches_closed);
-					ClauseTableauPrint(control->closed_tableau);
-					return control->closed_tableau;
-				}
-				continue;
-			}
-			else if (open_branch->depth > max_depth)
-			{
-				//printf("Reached max depth.\n");
-				open_branch = open_branch->succ;
-				continue;
-			}
-			*/
 			Clause_p selected = extension_candidates->anchor->succ;
 			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
 			{
@@ -199,6 +159,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 																										open_branch,
 																										distinct_tableaux,
 																										selected);
+				printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
 				if (control->closed_tableau)
 				{
 					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
@@ -238,7 +199,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		number_of_extensions = 0;
 	}
 	
-	printf("# Went through all of the possible tableaux\n");
+	printf("# Went through all of the possible tableaux... %ld total.\n", distinct_tableaux->members);
 	
 	//ClauseSetFree(extension_candidates);
 	return NULL;
@@ -449,6 +410,7 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
 													 extension_candidates, 
 													 current_depth);
+		printf("# Increasing maximum depth to %d\n", current_depth + 1);
 		if (resulting_tab)
 		{
 			printf("Closed tableau found!\n");

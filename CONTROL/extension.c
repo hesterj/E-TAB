@@ -144,7 +144,16 @@ bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
 		{
 			if (SubstIsRenaming(subst))
 			{
+				printf("Literal: ");
+				EqnPrint(GlobalOut, literal, EqnIsNegative(literal), true);
+				printf("\nNode Literal: ");
+				EqnPrint(GlobalOut, node_literal, EqnIsNegative(node_literal), true);
+				printf("\n");
+				printf("Subst used in irregularity: ");
+				SubstPrint(GlobalOut, subst, branch->terms->sig,true);
+				printf("\n");
 				SubstDelete(subst);
+				printf("# Branch contains literal... irregular\n");
 				return true;
 			}
 		}
@@ -255,7 +264,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	//  If this tableau is irregular, we to undo all of the work.
 	if (!regular)
 	{
-		//printf("# Irregular extension!\n");
+		printf("# Irregular extension!\n");
 		assert(new_leaf_clauses_set->members == 0);
 		ClauseSetFree(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
@@ -356,6 +365,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			TableauExtensionFree(extension_candidate);
 			if (maybe_extended)
 			{
+				printf("# Extension completed.\n");
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{
@@ -364,6 +374,10 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 					ClauseSetFree(new_leaf_clauses);
 					return extensions_done;
 				}
+			}
+			else
+			{
+				printf("# Did not do extension step for some reason.\n");
 			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}

@@ -32,7 +32,10 @@ def proof_search(name):
 	print(temp)
 	#call(temp)
 	subprocess.run(temp, shell=True)
-	if 'ResourceOut' in open(output_file).read():
+	elif 'CPU time limit exceeded' in open(output_file).read():
+		print('Timeout')
+		resourceout.append(name)
+	elif 'ResourceOut' in open(output_file).read():
 		print('Resourceout')
 		resourceout.append(name)
 	elif 'Failure:' in open(output_file).read():
