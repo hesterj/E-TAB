@@ -265,6 +265,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	if (!regular)
 	{
 		printf("# Irregular extension!\n");
+		ClauseTableauPrint(parent->master);
 		assert(new_leaf_clauses_set->members == 0);
 		ClauseSetFree(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
@@ -348,13 +349,16 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(leaf_clause);
 		assert(selected);
 		
+		printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
+		
+		ClauseTableauPrint(open_branch->master);
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch->label))) // stricter extension step
 		{
-			//printf("\033[1;31m");
-			//printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
-			//printf("\033[0m");
+			printf("\033[1;31m");
+			printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
+			printf("\033[0m");
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
 																		   subst, 
@@ -377,12 +381,14 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			}
 			else
 			{
-				printf("# Did not do extension step for some reason.\n");
+				printf("# Did not do extension step because of regularity.\n");
 			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}
 		leaf_clause = leaf_clause->succ;
 	}
+	
+	printf("Exiting ClauseTableauExtensionRuleAttemptOnBranch.\n");
 	
 	// Do not work here.  The tableau of open branch has been copied and worked on. 
 	// The current open branch is now "old" and will only be used for other extensions.

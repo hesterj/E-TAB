@@ -352,11 +352,13 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    if (active->members == 0) return NULL;
    ClauseSet_p unit_axioms = ClauseSetAlloc();
    ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
+   /*
    long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
    printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
 																										extension_candidates->members,
 																										active->members);
    assert(number_of_units == unit_axioms->members);
+   */
    if (extension_candidates->members == 0)
    {
 		//ClauseSetFree(unit_axioms);
@@ -397,7 +399,6 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
 		start_label = start_label->succ;
 	}
-	
 	
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
 	
