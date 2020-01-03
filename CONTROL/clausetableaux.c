@@ -947,9 +947,9 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	else tab->id = tab->label->ident - LONG_MIN;
 	
 	assert(arity > 0);
+	
 	tab->children = ClauseTableauArgArrayAlloc(arity);
 	literals = EqnListCopy(start->literals, bank);
-
 	for (int i=0; i<arity; i++)
 	{
 		lit = EqnListExtractFirst(&literals);
@@ -962,7 +962,6 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 		assert(child->label);
 		TableauSetInsert(child->open_branches, child);
 	}
-	
 	EqnListFree(literals);
 	
 	return tab;

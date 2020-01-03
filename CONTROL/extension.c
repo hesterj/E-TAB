@@ -184,6 +184,11 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
 /*  Actually does an extension rule application.  head_literal_location is the PStackPointer corresponding of the head clause in 
  * 	new_leaf_clauses.  literal_number is the number of literals in the clause that is being split in the extension rule application.
  *  This method is only called by ClauseTableauExtensionRuleAttempt.  If this method is called there is likely a Subst_p active!
+ * 
+ *  Does not modify the old tableau!  A copy of it is made, which is then extended.
+ *  This is because we may need the old unmodified tableau for other extension steps,
+ *  or undo the work if the extension is irregular.  Irregular extensions are 
+ *  detected after the work is done.
 */
 
 ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension)
@@ -211,6 +216,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	// Do the extension rule on the active branch of the newly created tableau
 	
 	ClauseTableau_p parent = tableau_copy->active_branch;
+	tableau_copy->active_branch = NULL; // We have the handle where we are working, so set this to NULL to indicate this.
 	if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
 	else parent->id = extension->selected->ident - LONG_MIN;
 	
@@ -245,7 +251,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 		leaf_clause = ClauseSetExtractFirst(new_leaf_clauses_set);
 		if (ClauseTableauBranchContainsLiteral(parent, leaf_clause->literals))
 		{
-			regular = false;
+			regular = false;  // REGULARITY CHECKING!
 		}
 		assert(leaf_clause);
 		parent->children[p] = ClauseTableauChildLabelAlloc(parent, leaf_clause, p);
@@ -261,7 +267,9 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			parent->children[p]->open = true;
 		}
 	}
-	//  If this tableau is irregular, we to undo all of the work.
+	//  If this tableau is irregular, we have to undo all of the work.
+	//  This can probably be detected earlier to save
+	//  unnecessary allocations and work.
 	if (!regular)
 	{
 		printf("# Irregular extension!\n");
@@ -351,7 +359,6 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		
 		printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
-		ClauseTableauPrint(open_branch->master);
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch->label))) // stricter extension step

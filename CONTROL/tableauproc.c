@@ -151,6 +151,13 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				ClauseTableauPrint(active_tableau);
 				return active_tableau;
 			}
+			
+			printf("This is the tableau we are trying to extend.\n");
+			ClauseTableauPrint(open_branch->master);
+			printf("Open branch in question has label ");
+			ClausePrint(GlobalOut, open_branch->label, true);
+			printf("\n");
+			
 			number_of_extensions = 0;
 			Clause_p selected = extension_candidates->anchor->succ;
 			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
@@ -187,10 +194,11 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		active_tableau = active_tableau->master_succ;
 		if (number_of_extensions > 0)
 		{
-			printf("Number of active tableau before extension-free step: %ld\n", distinct_tableaux->members);
+			printf("Number of active tableaux before extension-free step: %ld\n", distinct_tableaux->members);
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
 			ClauseTableauFree(trash);
+			printf("Tableau that has been check for all extensions has been free'd. %ld tableaux.\n", distinct_tableaux->members);
 			//printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
 		}
 		assert(active_tableau);
@@ -389,6 +397,7 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    //ClauseSetGCMarkTerms(unit_axioms);
    
 	ClauseTableau_p beginning_tableau = NULL;
+	
 	// Create a tableau for each axiom using the start rule
    Clause_p start_label = extension_candidates->anchor->succ;
    while (start_label != extension_candidates->anchor)
