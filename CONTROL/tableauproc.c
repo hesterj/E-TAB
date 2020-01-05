@@ -140,7 +140,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			}
 			else if (fold_close_cycle_test == 0)
 			{
-				printf("No branches could be closed in fold-close cycle.\n");
+				//printf("No branches could be closed in fold-close cycle.\n");
 			}
 			else
 			{
@@ -152,11 +152,11 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				return active_tableau;
 			}
 			
-			printf("This is the tableau we are trying to extend.\n");
-			ClauseTableauPrint(open_branch->master);
-			printf("Open branch in question has label ");
-			ClausePrint(GlobalOut, open_branch->label, true);
-			printf("\n");
+			//printf("This is the tableau we are trying to extend.\n");
+			//ClauseTableauPrint(open_branch->master);
+			//printf("Open branch in question has label ");
+			//ClausePrint(GlobalOut, open_branch->label, true);
+			//printf("\n");
 			
 			number_of_extensions = 0;
 			Clause_p selected = extension_candidates->anchor->succ;
@@ -166,7 +166,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 																										open_branch,
 																										distinct_tableaux,
 																										selected);
-				printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
+				//printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
 				if (control->closed_tableau)
 				{
 					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
@@ -198,7 +198,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
 			ClauseTableauFree(trash);
-			printf("Tableau that has been check for all extensions has been free'd. %ld tableaux.\n", distinct_tableaux->members);
+			//printf("Tableau that has been check for all extensions has been free'd. %ld tableaux.\n", distinct_tableaux->members);
 			//printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
 		}
 		assert(active_tableau);

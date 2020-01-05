@@ -144,16 +144,10 @@ bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
 		{
 			if (SubstIsRenaming(subst))
 			{
-				printf("Literal: ");
-				EqnPrint(GlobalOut, literal, EqnIsNegative(literal), true);
-				printf("\nNode Literal: ");
-				EqnPrint(GlobalOut, node_literal, EqnIsNegative(node_literal), true);
-				printf("\n");
-				printf("Subst used in irregularity: ");
-				SubstPrint(GlobalOut, subst, branch->terms->sig,true);
-				printf("\n");
+				//printf("Node clause:\n");
+				//ClausePrint(GlobalOut, label, true);printf("\n");
 				SubstDelete(subst);
-				printf("# Branch contains literal... irregular\n");
+				//printf("# Branch contains literal... irregular\n");
 				return true;
 			}
 		}
@@ -249,7 +243,9 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	for (long p=0; p < number_of_children; p++)
 	{
 		leaf_clause = ClauseSetExtractFirst(new_leaf_clauses_set);
-		if (ClauseTableauBranchContainsLiteral(parent, leaf_clause->literals))
+		//printf("Leaf clause before regularity check:\n");
+		//ClausePrint(GlobalOut, leaf_clause, true);printf("\n");
+		if (regular && ClauseTableauBranchContainsLiteral(parent, leaf_clause->literals))
 		{
 			regular = false;  // REGULARITY CHECKING!
 		}
@@ -272,8 +268,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	//  unnecessary allocations and work.
 	if (!regular)
 	{
-		printf("# Irregular extension!\n");
-		ClauseTableauPrint(parent->master);
+		//printf("# Irregular extension!\n");
+		//ClauseTableauPrint(parent->master);
 		assert(new_leaf_clauses_set->members == 0);
 		ClauseSetFree(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
@@ -357,7 +353,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(leaf_clause);
 		assert(selected);
 		
-		printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
+		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
@@ -395,7 +391,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		leaf_clause = leaf_clause->succ;
 	}
 	
-	printf("Exiting ClauseTableauExtensionRuleAttemptOnBranch.\n");
+	//printf("Exiting ClauseTableauExtensionRuleAttemptOnBranch.\n");
 	
 	// Do not work here.  The tableau of open branch has been copied and worked on. 
 	// The current open branch is now "old" and will only be used for other extensions.
