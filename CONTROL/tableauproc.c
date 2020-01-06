@@ -132,7 +132,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
-			printf("Foldup close cycle: %d\n", fold_close_cycle_test);
+			//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
 			if (fold_close_cycle_test > 0)
 			{
 				printf("Branches closed, resetting to first open branch.\n");
@@ -194,7 +194,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		active_tableau = active_tableau->master_succ;
 		if (number_of_extensions > 0)
 		{
-			printf("Number of active tableaux before extension-free step: %ld\n", distinct_tableaux->members);
+			//printf("Number of active tableaux before extension-free step: %ld\n", distinct_tableaux->members);
 			ClauseTableau_p trash = active_tableau->master_pred;
 			TableauMasterSetExtractEntry(trash);
 			ClauseTableauFree(trash);

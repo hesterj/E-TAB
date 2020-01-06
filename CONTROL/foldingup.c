@@ -57,7 +57,7 @@ ClauseTableau_p PStackGetDeepestTableauNode(PStack_p stack)
 {
 	int deepest_depth = 0;
 	ClauseTableau_p deepest = NULL;
-	printf("Stack pointer in finding deepest: %ld\n", PStackGetSP(stack));
+	//printf("Stack pointer in finding deepest: %ld\n", PStackGetSP(stack));
 	if (PStackEmpty(stack))
 	{
 		printf("Error: Trying to find deepest node of empty stack!\n");
@@ -67,7 +67,7 @@ ClauseTableau_p PStackGetDeepestTableauNode(PStack_p stack)
 	for (PStackPointer p=0; p<PStackGetSP(stack); p++)
 	{
 		ClauseTableau_p temp = PStackElementP(stack, p);
-		printf("Depth of temp: %d\n", temp->depth);
+		//printf("Depth of temp: %d\n", temp->depth);
 		if (temp->depth >= deepest_depth)
 		{
 			deepest = temp;
@@ -218,8 +218,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 		return 0;
 	}
 	
-	printf("Label of node we are trying to fold up: false? %d\n", ClauseIsSemFalse(node->label));
-	ClausePrint(GlobalOut, node->label, true);printf("\n");
+	//printf("Label of node we are trying to fold up: f_code: %ld %ld\n", node->label->literals->lterm->f_code, node->label->literals->rterm->f_code);
+	//ClausePrint(GlobalOut, node->label, true);printf("\n");
 	
 	// Get the nodes that are eligible to fold up to
 	PStack_p dominated_markings = CollectDominatedMarkingsWrapper(node);
@@ -231,14 +231,14 @@ int FoldUpAtNode(ClauseTableau_p node)
 	if ((PStackGetSP(dominators) == 0) ||
 		((PStackGetSP(dominators) == 1) && (PStackElementP(dominators,0) == node->master)))
 	{
-		printf("Case 1, folding up to root.\n");
+		//printf("Case 1, folding up to root.\n");
 		// Case 1: Add the negation of the label of node to the literals at the root (node->master)
 		if (node->folded_up != node->depth) // Make sure we have not already folded to the root
 		{
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			printf("The flipped literal clause that has been folded up to root:\n");
-			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
+			//printf("The flipped literal clause that has been folded up to root:\n");
+			//ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			node->folded_up = node->depth;
 			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
