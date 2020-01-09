@@ -824,6 +824,7 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
 	   old_var = PStackElementP(variables, p);
 	   //fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
 	   //printf("tableau max var: %ld\n", tableau->master->max_var);
+	   //printf("# Old_var->type in ClauseFlatCopyFresh: %ld\n", old_var->type->f_code);
 	   tableau->master->max_var -= 2;
 	   fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
 	   assert(fresh_var != old_var);
@@ -892,6 +893,7 @@ Clause_p ClauseFlatCopyFresh(Clause_p clause, ClauseTableau_p tableau)
    for (p = 0; p < PStackGetSP(variables); p++)
    {
 	   old_var = PStackElementP(variables, p);
+	   //printf("# Old_var->type in ClauseFlatCopyFresh: %ld\n", old_var->type->f_code);
 	   //fresh_var = VarBankGetFreshVar(variable_bank, old_var->type);  // 2 is individual sort
 	   //printf("tableau max var: %ld\n", tableau->master->max_var);
 	   tableau->master->max_var -= 2;
@@ -972,6 +974,60 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 int ClauseTableauDifference(ClauseTableau_p higher, ClauseTableau_p lower)
 {
 	return (lower->depth - higher->depth);
+}
+
+/*  Creates the symmetry, reflexivity, and transitivity equality axioms.
+ *  These are needed in clausal tableaux calculus for problems with equality.
+ *  Clausified, they are 4 axioms.
+ * 
+*/
+
+ClauseSet_p EqualityAxioms(TB_p bank)
+{
+	//Clause_p symmetry
+	Type_p i_type = bank->sig->type_bank->i_type;
+	Term_p x = VarBankVarAssertAlloc(bank->vars, -2, i_type);
+	Term_p y = VarBankVarAssertAlloc(bank->vars, -4, i_type);
+	Term_p z = VarBankVarAssertAlloc(bank->vars, -6, i_type);
+	ClauseSet_p equality_axioms = ClauseSetAlloc();
+	
+	Eqn_p x_equals_x = EqnAlloc(x, x, bank, true);
+	Clause_p clause1 = ClauseAlloc(x_equals_x);
+	ClauseRecomputeLitCounts(clause1);
+	printf("clause 1: %d\n", ClauseLiteralNumber(clause1));
+	ClausePrint(GlobalOut, clause1, true);
+	ClauseSetInsert(equality_axioms, clause1);
+	
+	Eqn_p y_equals_x = EqnAlloc(y, x, bank, true);
+	Eqn_p x_neq_y = EqnAlloc(x, y, bank, false);
+	EqnListAppend(&y_equals_x, x_neq_y);
+	Clause_p clause2 = ClauseAlloc(y_equals_x);
+	ClauseRecomputeLitCounts(clause2);
+	printf("clause 2: %d\n", ClauseLiteralNumber(clause2));
+	ClausePrint(GlobalOut, clause2, true);
+	ClauseSetInsert(equality_axioms, clause2);
+	
+	Eqn_p x_equals_y = EqnAlloc(x, y, bank, true);
+	Eqn_p y_neq_x = EqnAlloc(y, x, bank, false);
+	EqnListAppend(&x_equals_y, y_neq_x);
+	Clause_p clause3 = ClauseAlloc(x_equals_y);
+	ClauseRecomputeLitCounts(clause2);
+	printf("clause 3: %d\n", ClauseLiteralNumber(clause3));
+	ClausePrint(GlobalOut, clause3, true);
+	ClauseSetInsert(equality_axioms, clause3);
+	
+	Eqn_p x_equals_z = EqnAlloc(x, z, bank, true);
+	x_neq_y = EqnAlloc(x, y, bank, false);
+	Eqn_p y_neq_z = EqnAlloc(y, z, bank, false);
+	EqnListAppend(&x_equals_z, x_neq_y);
+	EqnListAppend(&x_equals_z, y_neq_z);
+	Clause_p clause4 = ClauseAlloc(x_equals_z);
+	ClauseRecomputeLitCounts(clause4);
+	printf("clause 4: %d\n", ClauseLiteralNumber(clause4));
+	ClausePrint(GlobalOut, clause4, true);
+	ClauseSetInsert(equality_axioms, clause4);
+	
+	return equality_axioms;
 }
 
 // Goes through the children to tableau to ensure that all of the nodes have labels

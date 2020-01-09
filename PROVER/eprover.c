@@ -549,6 +549,7 @@ int main(int argc, char* argv[])
 		srand(time(0));
 		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
 		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
+		printf("# Tableau proof search.\n");
 		if (TableauBatch == 1)
 		{
 			printf("# Tableau batch search.\n");

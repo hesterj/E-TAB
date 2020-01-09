@@ -372,7 +372,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			TableauExtensionFree(extension_candidate);
 			if (maybe_extended)
 			{
-				printf("# Extension completed.\n");
+				//printf("# Extension completed.\n");
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{
@@ -384,7 +384,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			}
 			else
 			{
-				printf("# Did not do extension step because of regularity.\n");
+				//printf("# Did not do extension step because of regularity.\n");
 			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}

@@ -221,6 +221,9 @@ int FoldUpAtNode(ClauseTableau_p node)
 	//printf("Label of node we are trying to fold up: f_code: %ld %ld\n", node->label->literals->lterm->f_code, node->label->literals->rterm->f_code);
 	//ClausePrint(GlobalOut, node->label, true);printf("\n");
 	
+	//printf("The tableaux:\n");
+	//ClauseTableauPrint(node->master);printf("\n");
+	
 	// Get the nodes that are eligible to fold up to
 	PStack_p dominated_markings = CollectDominatedMarkingsWrapper(node);
 	PStack_p dominators = NodesThatDominateTableauFromMarks(node, dominated_markings); // This may not be necessary, the markings of dominated nodes must come from the same branch?
@@ -237,8 +240,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 		{
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			//printf("The flipped literal clause that has been folded up to root:\n");
-			//ClausePrint(GlobalOut, flipped_label, true);printf("\n");
+			printf("The flipped literal clause that has been folded up to root:\n");
+			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			node->folded_up = node->depth;
 			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
@@ -263,6 +266,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 			//printf("Folding up to master node.\n");
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
+			printf("The flipped literal clause that has been folded up to root:\n");
+			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			node->folded_up = node->depth;
 			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
@@ -274,6 +279,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 			//printf("Folding up to nonmaster node of difference %d\n.", node->folded_up);
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
+			printf("The flipped literal clause that has been folded up %d nodes:\n", node->folded_up);
+			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			ClauseTableauEdgeInsert(deepest->parent, flipped_label);
 		}
 		

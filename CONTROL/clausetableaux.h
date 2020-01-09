@@ -84,6 +84,8 @@ Clause_p ClauseFlatCopyFresh(Clause_p clause, ClauseTableau_p tableau);
 
 Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau);  // Major memory hog
 
+ClauseSet_p EqualityAxioms(TB_p bank);
+
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);
 Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause);

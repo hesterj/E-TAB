@@ -128,6 +128,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		ClauseTableauAssertCheck(active_tableau);
 		open_branch = active_tableau->open_branches->anchor->succ;
 		number_of_extensions = 0;
+		printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
 		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
@@ -360,6 +361,9 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    if (active->members == 0) return NULL;
    ClauseSet_p unit_axioms = ClauseSetAlloc();
    ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
+   ClauseSet_p equality_axioms = EqualityAxioms(bank);
+   ClauseSetInsertSet(extension_candidates, equality_axioms);
+   ClauseSetFree(equality_axioms);
    /*
    long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
    printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
