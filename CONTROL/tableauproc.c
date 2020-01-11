@@ -107,12 +107,12 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (control->closed_tableau)
 		{
-			printf("Success\n");
+			printf("# Success\n");
 			exit(0);
 		}
 		else if (distinct_tableaux->members == 1)
 		{
-			printf("The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
+			printf("# The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
 			assert(distinct_tableaux->anchor->master_succ);
 			//ClauseTableauPrint(distinct_tableaux->anchor->master_succ);
 		}
@@ -136,7 +136,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
 			if (fold_close_cycle_test > 0)
 			{
-				printf("Branches closed, resetting to first open branch.\n");
+				printf("# Branches closed, resetting to first open branch.\n");
 				open_branch = active_tableau->open_branches->anchor->succ;
 			}
 			else if (fold_close_cycle_test == 0)
@@ -145,7 +145,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			}
 			else
 			{
-				printf("Closed tableau found in fold-close cycle.\n");
+				printf("# Closed tableau found in fold-close cycle.\n");
 				assert(active_tableau->open_branches->members == 0);
 				bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
 				printf("# Closed tableau found! %d\n", all_branches_closed);
@@ -171,7 +171,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				if (control->closed_tableau)
 				{
 					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
-					printf("Closed tableau... %d\n", all_branches_closed);
+					printf("# Closed tableau... %d\n", all_branches_closed);
 					ClauseTableauPrint(control->closed_tableau);
 					return control->closed_tableau;
 				}

@@ -42,7 +42,7 @@ typedef struct clausetableau
 	struct tableau_set_cell* master_set;  // For controlling sets of distinct tableau
 	struct tableau_set_cell* open_branches; // the open branches that should be operated on
 	
-	// Poitners for navigating tableaux/sets of tableaux
+	// Pointers for navigating tableaux/sets of tableaux
 	struct clausetableau* active_branch; // active branch for keeping track of what branch is being extended
 	struct clausetableau* pred; // For navigating the set- used for open branches
 	struct clausetableau* succ;

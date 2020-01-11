@@ -506,7 +506,6 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	if (!ClauseIsUnit(a) || !ClauseIsUnit(b)) return NULL;
 	Eqn_p a_eqn = a->literals;
 	Eqn_p b_eqn = b->literals;
-	//TB_p bank = tab->terms;
 	
 	if (EqnIsPositive(a_eqn) && EqnIsPositive(b_eqn)) return NULL;
 	if (EqnIsNegative(a_eqn) && EqnIsNegative(b_eqn)) return NULL;
@@ -994,8 +993,8 @@ ClauseSet_p EqualityAxioms(TB_p bank)
 	Eqn_p x_equals_x = EqnAlloc(x, x, bank, true);
 	Clause_p clause1 = ClauseAlloc(x_equals_x);
 	ClauseRecomputeLitCounts(clause1);
-	printf("clause 1: %d\n", ClauseLiteralNumber(clause1));
-	ClausePrint(GlobalOut, clause1, true);
+	//printf("clause 1: %d\n", ClauseLiteralNumber(clause1));
+	//ClausePrint(GlobalOut, clause1, true);
 	ClauseSetInsert(equality_axioms, clause1);
 	
 	Eqn_p y_equals_x = EqnAlloc(y, x, bank, true);
@@ -1003,8 +1002,8 @@ ClauseSet_p EqualityAxioms(TB_p bank)
 	EqnListAppend(&y_equals_x, x_neq_y);
 	Clause_p clause2 = ClauseAlloc(y_equals_x);
 	ClauseRecomputeLitCounts(clause2);
-	printf("clause 2: %d\n", ClauseLiteralNumber(clause2));
-	ClausePrint(GlobalOut, clause2, true);
+	//printf("clause 2: %d\n", ClauseLiteralNumber(clause2));
+	//ClausePrint(GlobalOut, clause2, true);
 	ClauseSetInsert(equality_axioms, clause2);
 	
 	Eqn_p x_equals_y = EqnAlloc(x, y, bank, true);
@@ -1012,8 +1011,8 @@ ClauseSet_p EqualityAxioms(TB_p bank)
 	EqnListAppend(&x_equals_y, y_neq_x);
 	Clause_p clause3 = ClauseAlloc(x_equals_y);
 	ClauseRecomputeLitCounts(clause2);
-	printf("clause 3: %d\n", ClauseLiteralNumber(clause3));
-	ClausePrint(GlobalOut, clause3, true);
+	//printf("clause 3: %d\n", ClauseLiteralNumber(clause3));
+	//ClausePrint(GlobalOut, clause3, true);
 	ClauseSetInsert(equality_axioms, clause3);
 	
 	Eqn_p x_equals_z = EqnAlloc(x, z, bank, true);
@@ -1023,8 +1022,8 @@ ClauseSet_p EqualityAxioms(TB_p bank)
 	EqnListAppend(&x_equals_z, y_neq_z);
 	Clause_p clause4 = ClauseAlloc(x_equals_z);
 	ClauseRecomputeLitCounts(clause4);
-	printf("clause 4: %d\n", ClauseLiteralNumber(clause4));
-	ClausePrint(GlobalOut, clause4, true);
+	//printf("clause 4: %d\n", ClauseLiteralNumber(clause4));
+	//ClausePrint(GlobalOut, clause4, true);
 	ClauseSetInsert(equality_axioms, clause4);
 	
 	return equality_axioms;

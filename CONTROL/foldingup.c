@@ -152,7 +152,7 @@ void CollectDominatedMarkings(ClauseTableau_p original, ClauseTableau_p tableau,
 {
 	if (tableau->mark_int > 0)
 	{
-		assert(NodeIsLeaf(tableau));
+		//assert(NodeIsLeaf(tableau));
 		//printf("Mark int of a leaf node dominated by the tableau: %d\n", tableau->mark_int);
 		ClauseTableau_p mark = FoldingUpGetNodeFromMark(tableau, tableau->mark_int);
 		if (mark->depth < original->depth)

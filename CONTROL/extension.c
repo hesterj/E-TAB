@@ -197,12 +197,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(old_tableau_master->parent == NULL);
 	assert(distinct_tableaux);
 	assert(tableau_copy->open_branches);
-	//assert(tableau_copy->open_branches->members > 0);
-	if (tableau_copy->open_branches->members == 0)
-	{
-		printf("Doing an extension step with no open branches error.  Printing tableau.\n");
-		ClauseTableauPrint(tableau_copy);
-	}
+	assert(tableau_copy->open_branches->members != 0);
 	assert(tableau_copy->active_branch);
 	assert(tableau_copy->master == tableau_copy);
 	assert(extension->selected);
@@ -213,8 +208,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	tableau_copy->active_branch = NULL; // We have the handle where we are working, so set this to NULL to indicate this.
 	if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
 	else parent->id = extension->selected->ident - LONG_MIN;
-	
-	// 
 	
 	Clause_p head_literal_clause = NULL;
 	TB_p bank = parent->terms;
@@ -243,8 +236,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	for (long p=0; p < number_of_children; p++)
 	{
 		leaf_clause = ClauseSetExtractFirst(new_leaf_clauses_set);
-		//printf("Leaf clause before regularity check:\n");
-		//ClausePrint(GlobalOut, leaf_clause, true);printf("\n");
 		if (regular && ClauseTableauBranchContainsLiteral(parent, leaf_clause->literals))
 		{
 			regular = false;  // REGULARITY CHECKING!
@@ -268,8 +259,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	//  unnecessary allocations and work.
 	if (!regular)
 	{
-		//printf("# Irregular extension!\n");
-		//ClauseTableauPrint(parent->master);
 		assert(new_leaf_clauses_set->members == 0);
 		ClauseSetFree(new_leaf_clauses_set);
 		ClauseTableauFree(parent->master);
@@ -300,25 +289,31 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(parent->arity > 0);  // Since we did an extension step, there should be children
 	if (ClauseTableauMarkClosedNodes(parent))
 	{
-		int folded_up = FoldUpAtNode(parent);
-		//ClauseTableauPrint(parent->master);printf("\n");
+		int folded_up = FoldUpCloseCycle(parent->master);
 		printf("# Folded up %d nodes\n", folded_up);
 	}
 	
 	if (parent->open_branches->members == 0)
 	{
-		printf("Closed tableau found?\n");
+		printf("# Closed tableau found?\n");
+	}
+	
+	//printf("Open branches remaining: %ld\n", parent->open_branches->members);
+	//ClauseTableauPrint(parent->master);
+	
+	// The parent may have been completely closed and extracted
+	// from the collection of open branches during the foldup close
+	// cycle.
+	if (parent->set)
+	{
+		TableauSetExtractEntry(parent);
 	}
 	
 	assert(number_of_children == parent->arity);
-	assert(parent->set);
-	//assert(parent->open);
 	assert(parent->arity == number_of_children);
-	TableauSetExtractEntry(parent);
-	//parent->open = false;
+	assert(new_leaf_clauses_set->members == 0);
 	
 	// There is no need to apply the substitution to the tablaeu, it has already been done by copying labels.
-	assert(new_leaf_clauses_set->members == 0);
 	ClauseSetFree(new_leaf_clauses_set);
 	return parent;
 }
