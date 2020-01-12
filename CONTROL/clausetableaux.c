@@ -33,6 +33,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->succ = NULL;
 	handle->master_pred = NULL;
 	handle->master_succ = NULL;
+	handle->local_variables = NULL;
 	handle->open_branches = NULL;
 	handle->children = NULL;
 	handle->label = NULL;
@@ -87,6 +88,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->open_branches = TableauSetAlloc();
 	handle->terms = tab->terms;
 	handle->control = tab->control;
+	handle->local_variables = NULL;
 	
 	if (tab->label)
 	{
@@ -152,6 +154,14 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->state = parent->state;
 	handle->open = tab->open;
 	handle->arity = tab->arity;
+	if (tab->local_variables)
+	{
+		handle->local_variables = PStackCopy(tab->local_variables);
+	}
+	else
+	{
+		handle->local_variables = NULL;
+	}
 	if (tab->folding_labels)
 	{
 		handle->folding_labels = ClauseSetCopy(bank, tab->folding_labels);
@@ -231,6 +241,7 @@ ClauseTableau_p ClauseTableauChildAlloc(ClauseTableau_p parent, int position)
 	handle->master_succ = NULL;
 	handle->children = NULL;
 	handle->signature = parent->signature;
+	handle->local_variables = NULL;
 	handle->terms = parent->terms;
 	handle->parent = parent;
 	handle->master = parent->master;
@@ -253,6 +264,7 @@ ClauseTableau_p ClauseTableauChildLabelAlloc(ClauseTableau_p parent, Clause_p la
 	handle->label = label;
 	handle->id = 0;
 	handle->head_lit = false;
+	handle->local_variables = NULL;
 	handle->control = parent->control;
 	handle->max_var = parent->max_var;
 	handle->set = NULL;
@@ -291,12 +303,10 @@ void ClauseTableauFree(ClauseTableau_p trash)
 	{
 		DStrFree(trash->info);
 	}
-	/*
-	if (trash->mark)
+	if (trash->local_variables)
 	{
-		ClauseFree(trash->mark);
+		PStackFree(trash->local_variables);
 	}
-	*/
 	if (trash->folding_labels)
 	{
 		ClauseSetFree(trash->folding_labels);
@@ -316,13 +326,6 @@ void ClauseTableauFree(ClauseTableau_p trash)
 		TableauSetFree(trash->open_branches);
 		trash->open_branches = NULL;
 	}
-	/*
-	if (trash->depth == 0 && trash->unit_axioms)
-	{
-		ClauseSetFree(trash->unit_axioms);
-		trash->unit_axioms = NULL;
-	}
-	*/
 	ClauseTableauCellFree(trash);
 }
 

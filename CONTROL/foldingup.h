@@ -1,7 +1,7 @@
 #ifndef FOLDINGUP
 #define FOLDINGUP
 
-#include <clausetableaux.h>
+#include <localunification.h>
 
 bool ClauseTableauMarkClosedNodes(ClauseTableau_p tableau);
 #define ClauseTableauNodeIsClosed(tab) ClauseTableauMarkClosedNodes(tab)

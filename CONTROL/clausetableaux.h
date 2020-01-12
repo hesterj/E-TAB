@@ -32,6 +32,7 @@ typedef struct clausetableau
 	long id;  		// If a clause was split on a node, this is the id of the clause used to split.
 	long max_var;   // f_code of the maximal variable in the tableau
 	DStr_p info;
+	PStack_p local_variables; // The variables of the tableau that are local to the branch.
 	
 	Clause_p label;
 	ClauseSet_p unit_axioms; // Only present at the master node
