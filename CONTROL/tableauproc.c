@@ -433,6 +433,7 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 	}
 	
 	ClauseSetFree(extension_candidates);
+	ClauseSetFree(unit_axioms);
 	VarBankPopEnv(bank->vars);
    
    printf("# Connection tableau proof search finished.\n");

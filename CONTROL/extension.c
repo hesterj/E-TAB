@@ -348,6 +348,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(leaf_clause);
 		assert(selected);
 		
+		long num_local_variables = UpdateLocalVariables(open_branch);
 		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
