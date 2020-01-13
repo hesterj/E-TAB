@@ -55,6 +55,7 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	printf("Local variables:\n");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
+	PStackFree(other_branches_vars_stack);
 	PTreeFree(local_variables_tree);
 	node->local_variables = local_variables;
 	return num_variables;
@@ -68,7 +69,7 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p branch_vars, bool 
 	{
 		if ((iterator != branch->master) ^ (include_root))
 		{
-			num_variables += CollectVariablesAtNode(iterator, branch_vars);
+			num_variables += CollectVariablesAtNode(iterator, &branch_vars);
 		}
 		iterator = iterator->parent;
 	}
@@ -80,7 +81,7 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p branch_vars, bool 
  * variables found is returned.
 */
 
-long CollectVariablesAtNode(ClauseTableau_p node, PTree_p var_tree)
+long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 {
    long num_collected = 0;
    ClauseCollectVariables(node->label, &var_tree);
