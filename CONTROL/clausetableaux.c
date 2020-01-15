@@ -150,7 +150,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->depth = 1+parent->depth;
 	handle->position = tab->position;
 	assert(handle->depth > 0);
-	assert((handle->depth = parent->depth + 1));
+	assert((handle->depth == parent->depth + 1));
 	handle->state = parent->state;
 	handle->open = tab->open;
 	handle->arity = tab->arity;
@@ -722,29 +722,6 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause)
 	return subst;
 }
 
-/*  Simple wrapper for branch contradiction testing
- *  Checks the label of tab for contradiction against the labels of its parents
-*/
-
-bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab)
-{
-	Subst_p subst;
-	assert(tab);
-	assert(tab->label);
-	if ((subst = ClauseContradictsBranch(tab, tab->label)))
-	{
-		if (!PStackGetSP(subst))  // Only subst needed was identity
-		{
-			SubstDelete(subst);
-			return true;
-		}
-		ClauseTableauApplySubstitution(tab, subst);
-		SubstDelete(subst);
-		return true;
-	}
-	return false;
-}
-
 void ClauseTableauPrintBranch(ClauseTableau_p branch)
 {
 	ClauseTableau_p depth_check = branch;
@@ -833,9 +810,8 @@ Clause_p ClauseCopyFresh(Clause_p clause, ClauseTableau_p tableau)
 	   assert(fresh_var->f_code != old_var->f_code);
 	   if (fresh_var->f_code == old_var->f_code)
 	   {
-			//printf("continuing\n"); 
+			printf("Clause copy fresh error\n");
 			exit(0);
-			continue;
 		}
 	   SubstAddBinding(subst, old_var, fresh_var);
 	   //printf("The subst: %ld %ld\n", fresh_var->f_code, old_var->f_code);
@@ -904,9 +880,8 @@ Clause_p ClauseFlatCopyFresh(Clause_p clause, ClauseTableau_p tableau)
 	   assert(fresh_var->f_code != old_var->f_code);
 	   if (fresh_var->f_code == old_var->f_code)
 	   {
-			//printf("continuing\n"); 
+			printf("Clause flat copy fresh error\n");
 			exit(0);
-			continue;
 		}
 	   SubstAddBinding(subst, old_var, fresh_var);
 	   //printf("The subst: %ld %ld\n", fresh_var->f_code, old_var->f_code);
@@ -931,7 +906,6 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	TB_p bank = tab->terms;
 	int arity = 0;
 	Clause_p new_clause;
-	ClauseTableau_p child;
 	assert(!(tab->label));
 	assert(!(tab->arity));
 	assert(tab->master_set);
@@ -956,6 +930,7 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	literals = EqnListCopy(start->literals, bank);
 	for (int i=0; i<arity; i++)
 	{
+		ClauseTableau_p child;
 		lit = EqnListExtractFirst(&literals);
 		tab->children[i] = ClauseTableauChildAlloc(tab, i);
 		child = tab->children[i];
@@ -1189,35 +1164,4 @@ void TableauMasterSetFree(TableauSet_p set)
 	TableauSetCellFree(set);
 }
 
-/*
- *  Attempt closure rule on all the open branches of the tableau.
- *  Returns the total number of closures that were accomplished.
- *  If there are no more open branches (a closed tableau was found),
- *  return the negative of the total number of branches closed.
-*/
 
-int AttemptClosureRuleOnAllOpenBranches(ClauseTableau_p tableau)
-{
-	int num_branches_closed = 0;
-	ClauseTableau_p open_branch = tableau->open_branches->anchor->succ;
-	if (ClauseTableauBranchClosureRuleWrapper(open_branch))
-	{
-		num_branches_closed += 1;
-		open_branch->open = false;
-		open_branch = open_branch->succ;
-		TableauSetExtractEntry(open_branch->pred);
-		if (open_branch == tableau->open_branches->anchor)
-		{
-			open_branch = open_branch->succ;
-		}
-		if (tableau->open_branches->members == 0)
-		{
-			return -num_branches_closed;
-		}
-	}
-	else
-	{
-		open_branch = open_branch->succ;
-	}
-	return num_branches_closed;
-}

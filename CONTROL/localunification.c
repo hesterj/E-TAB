@@ -27,22 +27,30 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	PStack_p local_variables = PStackAlloc();
 	// Collect the variables in the current branch
 	
-	num_variables += CollectVariablesOfBranch(node, local_variables_tree, true);
-	
+	num_variables += CollectVariablesOfBranch(node, &local_variables_tree, true);
+	/*
+	printf("Variables of this branch:");
+	PTreeDebugPrint(GlobalOut, local_variables_tree);
+	printf("\n");
+	*/
 	// Collect the variables of the other branches
 	ClauseTableau_p branch_iterator = node->open_branches->anchor->succ;
 	PTree_p temp_variable_tree = NULL;
-	long other_branches_vars = 0;
 	while (branch_iterator != node->open_branches->anchor)
 	{
 		if (branch_iterator != node)
 		{
-			other_branches_vars += CollectVariablesOfBranch(branch_iterator, temp_variable_tree, false);
+			CollectVariablesOfBranch(branch_iterator, &temp_variable_tree, false);
 		}
 		branch_iterator = branch_iterator->succ;
 	}
 	PStack_p other_branches_vars_stack = PStackAlloc();
-	other_branches_vars = PTreeToPStack(other_branches_vars_stack, temp_variable_tree);
+	PTreeToPStack(other_branches_vars_stack, temp_variable_tree);
+	/*
+	printf("Variables of other branches:");
+	PTreeDebugPrint(GlobalOut, temp_variable_tree);
+	printf("\n");
+	*/
 	PTreeFree(temp_variable_tree);
 	
 	// If a variable occurs in another branch, remove it from the tree of local variables
@@ -52,16 +60,18 @@ long UpdateLocalVariables(ClauseTableau_p node)
 		PTreeDeleteEntry(&local_variables_tree, PStackPopP(other_branches_vars_stack));
 	}
 	num_variables = PTreeToPStack(local_variables, local_variables_tree);
-	printf("Local variables:\n");
+	/*
+	printf("Local variables:");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
+	*/
 	PStackFree(other_branches_vars_stack);
 	PTreeFree(local_variables_tree);
 	node->local_variables = local_variables;
 	return num_variables;
 }
 
-long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p branch_vars, bool include_root)
+long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p *branch_vars, bool include_root)
 {
 	long num_variables = 0;
 	ClauseTableau_p iterator = branch;
@@ -69,7 +79,7 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p branch_vars, bool 
 	{
 		if ((iterator != branch->master) ^ (include_root))
 		{
-			num_variables += CollectVariablesAtNode(iterator, &branch_vars);
+			num_variables += CollectVariablesAtNode(iterator, branch_vars);
 		}
 		iterator = iterator->parent;
 	}
@@ -84,7 +94,7 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p branch_vars, bool 
 long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 {
    long num_collected = 0;
-   ClauseCollectVariables(node->label, &var_tree);
+   ClauseCollectVariables(node->label, var_tree);
 	
    Clause_p handle;
    if (node->folding_labels)
@@ -92,7 +102,7 @@ long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 	   for(handle = node->folding_labels->anchor->succ; handle!= node->folding_labels->anchor; handle =
 			  handle->succ)
 	   {
-		  num_collected += ClauseCollectVariables(handle, &var_tree);
+		  num_collected += ClauseCollectVariables(handle, var_tree);
 	   }
    }
    
@@ -101,9 +111,12 @@ long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 		for(handle = node->unit_axioms->anchor->succ; handle!= node->unit_axioms->anchor; handle =
 				 handle->succ)
 		{
-			num_collected += ClauseCollectVariables(handle, &var_tree);
+			num_collected += ClauseCollectVariables(handle, var_tree);
 		}
 	}
+	//printf("Variables found in node in CollectVariablesAtNode:");
+	//PTreeDebugPrint(GlobalOut, *var_tree);
+	//printf("\n");
 	
 	return num_collected;
 }

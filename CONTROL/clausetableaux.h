@@ -90,7 +90,6 @@ ClauseSet_p EqualityAxioms(TB_p bank);
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set);
 Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p clause);
-bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab);
 
 
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
@@ -140,7 +139,6 @@ void ClauseTableauCollectLeavesStack(ClauseTableau_p tab, PStack_p leaves);
 
 bool TableauDominatesNode(ClauseTableau_p tab, ClauseTableau_p node);
 
-int AttemptClosureRuleOnAllOpenBranches(ClauseTableau_p tableau);
 
 
 #endif
