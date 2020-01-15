@@ -333,12 +333,16 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 	int extensions_done = 0;
 	
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
-	//ClauseTableau_p parent = open_branch->parent;
+	/*
+	printf("Splitting clause fresh: ");ClausePrint(GlobalOut, selected, true);
+	printf("\n");
+	printf("Fresh literals: ");ClauseSetPrint(GlobalOut, new_leaf_clauses, true);
+	*/
 	assert(new_leaf_clauses->members);
 	Subst_p subst = NULL;
 	Clause_p leaf_clause = new_leaf_clauses->anchor->succ;
 	
-	//assert(open_branch->master->master_set);
+	assert(open_branch->master->master_set);
 	while (leaf_clause != new_leaf_clauses->anchor)
 	{
 		assert(open_branch);
@@ -350,10 +354,6 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(selected);
 		
 		long num_local_variables = UpdateLocalVariables(open_branch);
-		if (num_local_variables)
-		{
-			printf("Local variables found!\n");
-		}
 		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...

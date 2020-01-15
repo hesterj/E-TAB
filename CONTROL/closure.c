@@ -10,10 +10,6 @@ bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab)
 	assert(tab);
 	assert(tab->label);
 	long num_local_variables = UpdateLocalVariables(tab);
-	if (num_local_variables)
-	{
-		printf("Local variables found!\n");
-	}	
 
 	if ((subst = ClauseContradictsBranch(tab, tab->label)))
 	{

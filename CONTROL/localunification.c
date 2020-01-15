@@ -28,11 +28,13 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	// Collect the variables in the current branch
 	
 	num_variables += CollectVariablesOfBranch(node, &local_variables_tree, true);
-	/*
+	
 	printf("Variables of this branch:");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
-	*/
+	
+
+	
 	// Collect the variables of the other branches
 	ClauseTableau_p branch_iterator = node->open_branches->anchor->succ;
 	PTree_p temp_variable_tree = NULL;
@@ -46,28 +48,71 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	}
 	PStack_p other_branches_vars_stack = PStackAlloc();
 	PTreeToPStack(other_branches_vars_stack, temp_variable_tree);
-	/*
-	printf("Variables of other branches:");
-	PTreeDebugPrint(GlobalOut, temp_variable_tree);
-	printf("\n");
-	*/
-	PTreeFree(temp_variable_tree);
 	
-	// If a variable occurs in another branch, remove it from the tree of local variables
-	
+	printf("Other branches var stack: ");
 	for (PStackPointer p = 0; p<PStackGetSP(other_branches_vars_stack); p++)
 	{
-		PTreeDeleteEntry(&local_variables_tree, PStackPopP(other_branches_vars_stack));
+		Term_p other_variable = PStackElementP(other_branches_vars_stack, p);
+		TermPrint(GlobalOut, other_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
+	}
+	printf("\n");
+	printf("Other branches var tree: ");
+	PTreeDebugPrint(GlobalOut, temp_variable_tree);
+	printf("\n");
+	
+	// If a variable occurs in another branch, remove it from the tree of local variables
+	//printf("SP of other branches_vars_stack: %ld\n", PStackGetSP(other_branches_vars_stack));
+	while (!PStackEmpty(other_branches_vars_stack))
+	{
+		Term_p other_branch_variable = PStackPopP(other_branches_vars_stack);
+		bool deleted = PTreeDeleteEntry(&local_variables_tree, other_branch_variable);
+		printf("OBV: ");TermPrint(GlobalOut, other_branch_variable, node->terms->sig, DEREF_ALWAYS);printf(" d%d\n", deleted);
+		
+		if (PTreeFind(&local_variables_tree, other_branch_variable))
+		{
+			printf("Other branch variable still found in local variables tree...\n");
+			exit(0);
+		}
 	}
 	num_variables = PTreeToPStack(local_variables, local_variables_tree);
-	/*
-	printf("Local variables:");
+	
+	
+	printf("Local var tree: ");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
-	*/
-	PStackFree(other_branches_vars_stack);
-	PTreeFree(local_variables_tree);
+	
 	node->local_variables = local_variables;
+	
+	// Bug checking
+	if (num_variables)
+	{
+		printf("%ld Local variables found! ", num_variables);
+		for (PStackPointer p = 0; p<PStackGetSP(local_variables); p++)
+		{
+			Term_p local_variable = PStackElementP(local_variables, p);
+			TermPrint(GlobalOut, local_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
+			if (PTreeFind(&temp_variable_tree, local_variable))
+			{
+				printf("Found local variable in other branches var tree...\n");
+				printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
+				printf("Able to delete? %d\n", PTreeDeleteEntry(&temp_variable_tree, local_variable));
+				printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
+				printf("%ld nodes in temp_variable_tree.\n", PTreeNodes(temp_variable_tree));
+				//TermPrint(GlobalOut, temp_variable_tree->key, node->terms->sig, DEREF_ALWAYS);printf("\n");
+				exit(0);
+			}
+			
+		}
+		printf("\n");
+	}
+	if (num_variables >= 2)
+	{
+		exit(0);
+	}	
+	
+	PStackFree(other_branches_vars_stack);
+	PTreeFree(temp_variable_tree);
+	PTreeFree(local_variables_tree);
 	return num_variables;
 }
 
