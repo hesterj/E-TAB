@@ -28,11 +28,11 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	// Collect the variables in the current branch
 	
 	num_variables += CollectVariablesOfBranch(node, &local_variables_tree, true);
-	
+	/*
 	printf("Variables of this branch:");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
-	
+	*/
 
 	
 	// Collect the variables of the other branches
@@ -48,7 +48,7 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	}
 	PStack_p other_branches_vars_stack = PStackAlloc();
 	PTreeToPStack(other_branches_vars_stack, temp_variable_tree);
-	
+	/*
 	printf("Other branches var stack: ");
 	for (PStackPointer p = 0; p<PStackGetSP(other_branches_vars_stack); p++)
 	{
@@ -59,14 +59,14 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	printf("Other branches var tree: ");
 	PTreeDebugPrint(GlobalOut, temp_variable_tree);
 	printf("\n");
-	
+	*/
 	// If a variable occurs in another branch, remove it from the tree of local variables
 	//printf("SP of other branches_vars_stack: %ld\n", PStackGetSP(other_branches_vars_stack));
 	while (!PStackEmpty(other_branches_vars_stack))
 	{
 		Term_p other_branch_variable = PStackPopP(other_branches_vars_stack);
 		bool deleted = PTreeDeleteEntry(&local_variables_tree, other_branch_variable);
-		printf("OBV: ");TermPrint(GlobalOut, other_branch_variable, node->terms->sig, DEREF_ALWAYS);printf(" d%d\n", deleted);
+		//printf("OBV: ");TermPrint(GlobalOut, other_branch_variable, node->terms->sig, DEREF_ALWAYS);printf(" d%d\n", deleted);
 		
 		if (PTreeFind(&local_variables_tree, other_branch_variable))
 		{
@@ -76,11 +76,11 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	}
 	num_variables = PTreeToPStack(local_variables, local_variables_tree);
 	
-	
+	/*
 	printf("Local var tree: ");
 	PTreeDebugPrint(GlobalOut, local_variables_tree);
 	printf("\n");
-	
+	*/
 	node->local_variables = local_variables;
 	
 	// Bug checking
@@ -164,4 +164,19 @@ long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 	//printf("\n");
 	
 	return num_collected;
+}
+
+Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause, PStack_p local_variables)
+{
+	Subst_p subst = SubstAlloc();
+	for (PStackPointer p = 0; p < PStackGetSP(local_variables); p++)
+	{
+		Term_p old_var = PStackElementP(local_variables, p);
+		long max_f_code = master->max_var -= 2;
+		Term_p fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
+		SubstAddBinding(subst, old_var, fresh_var);
+	}
+	Clause_p new_clause = ClauseCopy(clause, master->terms);
+	SubstDelete(subst);
+	return new_clause;
 }
