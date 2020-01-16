@@ -343,6 +343,16 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 	Clause_p leaf_clause = new_leaf_clauses->anchor->succ;
 	
 	assert(open_branch->master->master_set);
+	
+	Clause_p open_branch_label = open_branch->label;
+	long num_local_variables = UpdateLocalVariables(open_branch);
+	if (num_local_variables)
+	{
+		assert(PStackGetSP(open_branch->local_variables) > 0);
+		open_branch_label = ReplaceLocalVariablesWithFresh(open_branch->master,
+																			open_branch_label,
+																			open_branch->local_variables);
+	}
 	while (leaf_clause != new_leaf_clauses->anchor)
 	{
 		assert(open_branch);
@@ -352,13 +362,11 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(open_branch->arity == 0);
 		assert(leaf_clause);
 		assert(selected);
-		
-		long num_local_variables = UpdateLocalVariables(open_branch);
 		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
-		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch->label))) // stricter extension step
+		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch_label))) // stricter extension step
 		{
 			printf("\033[1;31m");
 			printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
@@ -383,13 +391,13 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 					return extensions_done;
 				}
 			}
-			else
-			{
-				//printf("# Did not do extension step because of regularity.\n");
-			}
 			// The substitution has been deleted, the tableau parent is unchanged, so we can continue.
 		}
 		leaf_clause = leaf_clause->succ;
+	}
+	if (num_local_variables)
+	{
+		ClauseFree(open_branch_label);
 	}
 	
 	//printf("Exiting ClauseTableauExtensionRuleAttemptOnBranch.\n");

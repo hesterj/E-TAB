@@ -168,15 +168,19 @@ long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 
 Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause, PStack_p local_variables)
 {
+	Clause_p new_clause = NULL;
+	VarBank_p variable_bank = master->terms->vars;
+	//printf("Old clause: ");ClausePrint(GlobalOut, clause, true);printf("\n");
 	Subst_p subst = SubstAlloc();
 	for (PStackPointer p = 0; p < PStackGetSP(local_variables); p++)
 	{
 		Term_p old_var = PStackElementP(local_variables, p);
-		long max_f_code = master->max_var -= 2;
-		Term_p fresh_var = VarBankVarAssertAlloc(variable_bank, tableau->master->max_var, old_var->type);
+		master->max_var -= 2;
+		Term_p fresh_var = VarBankVarAssertAlloc(variable_bank, master->max_var, old_var->type);
 		SubstAddBinding(subst, old_var, fresh_var);
 	}
-	Clause_p new_clause = ClauseCopy(clause, master->terms);
+	new_clause = ClauseCopy(clause, master->terms);
+	//printf("New clause with binding: ");ClausePrint(GlobalOut, new_clause, true);printf("\n");
 	SubstDelete(subst);
 	return new_clause;
 }
