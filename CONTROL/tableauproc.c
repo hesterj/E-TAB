@@ -357,25 +357,39 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 	TBPrintBankInOrder(GlobalOut, bank);
 	*/
    problemType = PROBLEM_FO;
-   assert(max_depth);
-   if (active->members == 0) return NULL;
-   ClauseSet_p unit_axioms = ClauseSetAlloc();
-   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
-   ClauseSet_p equality_axioms = EqualityAxioms(bank);
-   ClauseSetInsertSet(extension_candidates, equality_axioms);
-   ClauseSetFree(equality_axioms);
-   /*
-   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
-   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
-																										extension_candidates->members,
-																										active->members);
-   assert(number_of_units == unit_axioms->members);
-   */
-   if (extension_candidates->members == 0)
+   PList_p conjectures = PListAlloc();
+   PList_p non_conjectures = PListAlloc();
+   bool conjectures_present = false;
+   ClauseSet_p extension_candidates = NULL;
+   ClauseSetSplitConjectures(active, conjectures, non_conjectures);
+   if (PListEmpty(conjectures))
    {
-		//ClauseSetFree(unit_axioms);
-		//ClauseSetFree(extension_candidates);
-		//return NULL;
+		printf("# No conjectures.\n");
+		extension_candidates = ClauseSetCopy(bank, active);
+	}
+	else
+	{
+		conjectures_present = true;
+		extension_candidates = ClauseSetAlloc();
+		PList_p handle;
+		for(handle=conjectures->succ;
+		handle != conjectures;
+		handle = handle->succ)
+		{
+			Clause_p conj_handle = handle->key.p_val;
+			printf("# Conjecture clause: ");ClausePrint(GlobalOut, conj_handle, true);printf("\n");
+			ClauseSetExtractEntry(conj_handle);
+			ClauseSetProp(conj_handle, CPTypeConjecture);
+			ClauseSetInsert(extension_candidates, conj_handle);
+		}
+		
+	}
+   assert(max_depth);
+   ClauseSet_p unit_axioms = ClauseSetAlloc();
+   ClauseSet_p equality_axioms = EqualityAxioms(bank);
+   
+   if (extension_candidates->members == 0) // Should not happen...
+   {
 		ClauseSetInsertSet(extension_candidates, unit_axioms);
 	}
    
@@ -387,8 +401,6 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    TableauSet_p open_branches = initial_tab->open_branches;
    TableauSetInsert(open_branches, initial_tab);
    
-   //ClauseSetPrint(GlobalOut, active, true);printf("\n");
-   
    FunCode max_var = ClauseSetGetMaxVar(active);
    assert(max_var <= 0);
    
@@ -398,7 +410,6 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    
    //  Move all of the unit clauses to be on the initial tableau
    initial_tab->unit_axioms = unit_axioms;
-   //ClauseSetGCMarkTerms(unit_axioms);
    
 	ClauseTableau_p beginning_tableau = NULL;
 	
@@ -406,6 +417,10 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
    Clause_p start_label = extension_candidates->anchor->succ;
    while (start_label != extension_candidates->anchor)
    {
+		if (ClauseQueryProp(start_label, CPTypeConjecture))
+		{
+			printf("# Conjecture start rule!\n");
+		}
 		beginning_tableau = ClauseTableauMasterCopy(initial_tab);
 		beginning_tableau->max_var = max_var;
 		TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
@@ -413,8 +428,17 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 		start_label = start_label->succ;
 	}
 	
+	if (active->members > 0)
+	{
+		while (!ClauseSetEmpty(active))
+		{
+			Clause_p non_conj = ClauseSetExtractFirst(active);
+			ClauseSetInsert(extension_candidates, non_conj);
+		}
+	}
+   ClauseSetInsertSet(extension_candidates, equality_axioms);
+   ClauseSetFree(equality_axioms);
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
-	
 	
 	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
 	

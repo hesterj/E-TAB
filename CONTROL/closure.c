@@ -76,7 +76,10 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p original_clause)
 	long num_local_variables = UpdateLocalVariables(tab);
 	if (num_local_variables)
 	{
+		//printf("Original clause before substitution of local variables: ");ClausePrint(GlobalOut, original_clause, true);printf("\n");
 		original_clause = ReplaceLocalVariablesWithFresh(tab->master, original_clause, tab->local_variables);
+		//printf("Original clause after substitution of local variables: ");ClausePrint(GlobalOut, original_clause, true);printf("\n");
+		//ClauseTableauPrint(tab->master);
 	}
 	// Check against the unit axioms
 	Clause_p unit_handle = tab->unit_axioms->anchor->succ;
@@ -118,12 +121,12 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p original_clause)
 		}
 		if (temporary_tab->folding_labels)
 		{
-			printf("Checking for edge contradiction.\n");
+			//printf("Checking for edge contradiction.\n");
 			if ((subst = ClauseContradictsSet(temporary_tab, original_clause, temporary_tab->folding_labels, tab)))
 			{
 				tab->mark_int = distance_up;
-				printf("Edge contradiction found.\n");
-				return subst;
+				printf("# Edge contradiction found.\n");
+				goto return_point;
 			}
 		}
 		if (num_local_variables)

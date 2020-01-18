@@ -240,8 +240,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 		{
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			printf("The flipped literal clause that has been folded up to root:\n");
-			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
+			//printf("The flipped literal clause that has been folded up to root:\n");
+			//ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			node->folded_up = node->depth;
 			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
@@ -266,8 +266,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 			//printf("Folding up to master node.\n");
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			printf("The flipped literal clause that has been folded up to root:\n");
-			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
+			//printf("The flipped literal clause that has been folded up to root:\n");
+			//ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			node->folded_up = node->depth;
 			ClauseTableauEdgeInsert(master_node, flipped_label);
 		}
@@ -279,8 +279,8 @@ int FoldUpAtNode(ClauseTableau_p node)
 			//printf("Folding up to nonmaster node of difference %d\n.", node->folded_up);
 			flipped_label = ClauseCopy(node->label, node->terms);
 			ClauseFlipLiteralSign(flipped_label, flipped_label->literals);
-			printf("The flipped literal clause that has been folded up %d nodes:\n", node->folded_up);
-			ClausePrint(GlobalOut, flipped_label, true);printf("\n");
+			//printf("The flipped literal clause that has been folded up %d nodes:\n", node->folded_up);
+			//ClausePrint(GlobalOut, flipped_label, true);printf("\n");
 			ClauseTableauEdgeInsert(deepest->parent, flipped_label);
 		}
 		

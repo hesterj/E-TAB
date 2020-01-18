@@ -86,11 +86,11 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	// Bug checking
 	if (num_variables)
 	{
-		printf("%ld Local variables found! ", num_variables);
+		//printf("%ld Local variables found! ", num_variables);
 		for (PStackPointer p = 0; p<PStackGetSP(local_variables); p++)
 		{
 			Term_p local_variable = PStackElementP(local_variables, p);
-			TermPrint(GlobalOut, local_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
+			//TermPrint(GlobalOut, local_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
 			if (PTreeFind(&temp_variable_tree, local_variable))
 			{
 				printf("Found local variable in other branches var tree...\n");
@@ -105,11 +105,14 @@ long UpdateLocalVariables(ClauseTableau_p node)
 		}
 		printf("\n");
 	}
+	/*
 	if (num_variables >= 2)
 	{
+		printf("# Multiple local variables.  Potentially not a bug, but exiting.\n");
+		ClauseTableauPrint(node->master);
 		exit(0);
 	}	
-	
+	*/
 	PStackFree(other_branches_vars_stack);
 	PTreeFree(temp_variable_tree);
 	PTreeFree(local_variables_tree);
@@ -169,6 +172,7 @@ long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause, PStack_p local_variables)
 {
 	Clause_p new_clause = NULL;
+	assert(PStackGetSP(local_variables));
 	VarBank_p variable_bank = master->terms->vars;
 	//printf("Old clause: ");ClausePrint(GlobalOut, clause, true);printf("\n");
 	Subst_p subst = SubstAlloc();
@@ -177,6 +181,8 @@ Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause,
 		Term_p old_var = PStackElementP(local_variables, p);
 		master->max_var -= 2;
 		Term_p fresh_var = VarBankVarAssertAlloc(variable_bank, master->max_var, old_var->type);
+		assert(old_var != fresh_var);
+		assert(old_var->f_code != fresh_var->f_code);
 		SubstAddBinding(subst, old_var, fresh_var);
 	}
 	new_clause = ClauseCopy(clause, master->terms);
