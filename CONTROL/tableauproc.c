@@ -132,6 +132,11 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
+			if (open_branch->depth > max_depth)
+			{
+				open_branch = open_branch->succ;
+				continue;
+			}
 			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
 			//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
 			if (fold_close_cycle_test > 0)
