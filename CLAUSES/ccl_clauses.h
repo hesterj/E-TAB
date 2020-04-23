@@ -422,6 +422,8 @@ bool    ClauseIsUntyped(Clause_p clause);
 bool    ClauseQueryLiteral(Clause_p clause, bool (*query_fun)(Eqn_p));
 #endif
 
+long ClauseGetIdent(Clause_p clause);
+
 /*---------------------------------------------------------------------*/
 /*                        End of File                                  */
 /*---------------------------------------------------------------------*/

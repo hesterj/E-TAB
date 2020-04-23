@@ -119,6 +119,10 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	return num_variables;
 }
 
+/*  Returns number of variables found
+ * 
+*/
+
 long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p *branch_vars, bool include_root)
 {
 	long num_variables = 0;
@@ -189,4 +193,34 @@ Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause,
 	//printf("New clause with binding: ");ClausePrint(GlobalOut, new_clause, true);printf("\n");
 	SubstDelete(subst);
 	return new_clause;
+}
+
+bool BranchIsLocal(ClauseTableau_p branch)
+{
+	PTree_p branch_vars = NULL;
+	long local_vars = UpdateLocalVariables(branch);
+	long num_vars = CollectVariablesOfBranch(branch, &branch_vars, true);
+	PTreeFree(branch_vars);
+	if (local_vars == num_vars)
+	{
+		//printf("# Local branch\n");
+		return true;
+	}
+	return false;
+	
+}
+
+bool AllBranchesAreLocal(ClauseTableau_p master)
+{
+	ClauseTableau_p branch_handle = master->open_branches->anchor->succ;
+	while (branch_handle != master->open_branches->anchor)
+	{
+		if (!BranchIsLocal(branch_handle))
+		{
+			return false;
+		}
+		branch_handle = branch_handle->succ;
+	}
+	printf("# All branches are local!\n");
+	return true;
 }

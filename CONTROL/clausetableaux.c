@@ -1087,4 +1087,62 @@ void TableauMasterSetFree(TableauSet_p set)
 	TableauSetCellFree(set);
 }
 
+void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
+{
+	FILE *dotgraph = fopen("/home/hesterj/Projects/APRTESTING/DOT/graph.dot", "w");
+	if (dotgraph == NULL)
+	{
+		printf("# File failure\n");
+		return;
+	}
+	else
+	{
+		printf("# Printing DOT APR graph to ~/Projects/APRTESTING/DOT/graph.dot\n");
+	}
+	
+	Clause_p root_label = tab->label;
+	long root_id = ClauseGetIdent(root_label);
+	
+	fprintf(dotgraph, "digraph aprgraph {\n");
+	fprintf(dotgraph, "   graph [splines = true overlap=scale]\n");
+	
+	fprintf(dotgraph,"   %ld [color=Green, label=\"", root_id);
+	ClausePrint(dotgraph, root_label, true);
+	fprintf(dotgraph, "\"]\n");
+	
+	for (int i=0; i < tab->arity; i++)
+	{	
+		ClauseTableau_p child = tab->children[i];
+		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
+	}
+	
+	fclose(dotgraph);
+}
+
+void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
+{
+	ClauseTableau_p parent = tab->parent;
+	Clause_p parent_label = parent->label;
+	long parent_ident = ClauseGetIdent(parent_label);
+	Clause_p label = tab->label;
+	long ident = ClauseGetIdent(label);
+	
+	if (!tab->open)
+	{
+		fprintf(dotgraph,"   %ld [color=Black, label=\"", ident);
+	}
+	else
+	{
+		fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
+	}
+	ClausePrint(dotgraph, label, true);
+	fprintf(dotgraph, "\"]\n");
+	fprintf(dotgraph,"   %ld -> %ld\n", parent_ident, ident);
+	
+	for (int i=0; i < tab->arity; i++)
+	{	
+		ClauseTableau_p child = tab->children[i];
+		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
+	}
+}
 

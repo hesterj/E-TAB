@@ -104,6 +104,12 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
+		if (AllBranchesAreLocal(active_tableau))
+		{
+			printf("All %ld branches local!\n", active_tableau->open_branches->members);
+			ClauseTableauPrintDOTGraph(active_tableau);
+			printf("DOT graph printed\n");
+		}
 		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (control->closed_tableau)
 		{
@@ -391,7 +397,7 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 	}
    assert(max_depth);
    ClauseSet_p unit_axioms = ClauseSetAlloc();
-   ClauseSet_p equality_axioms = EqualityAxioms(bank);
+   //ClauseSet_p equality_axioms = EqualityAxioms(bank);
    
    if (extension_candidates->members == 0) // Should not happen...
    {
@@ -441,8 +447,8 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 			ClauseSetInsert(extension_candidates, non_conj);
 		}
 	}
-   ClauseSetInsertSet(extension_candidates, equality_axioms);
-   ClauseSetFree(equality_axioms);
+   //ClauseSetInsertSet(extension_candidates, equality_axioms);
+   //ClauseSetFree(equality_axioms);
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
 	
 	printf("# Start rule applications: %ld\n", distinct_tableaux->members);

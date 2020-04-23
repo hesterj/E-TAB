@@ -63,6 +63,16 @@ static long clause_perm_ident_counter = 0; /* Used to generate new
 /*                         Internal Functions                          */
 /*---------------------------------------------------------------------*/
 
+long ClauseGetIdent(Clause_p clause)
+{
+	long ident = clause->ident;
+	if (ident<0)
+	{
+		ident = ident - LONG_MIN;
+	}
+	return ident;
+}
+
 /*-----------------------------------------------------------------------
 //
 // Function: foundEqLitLater
