@@ -18,6 +18,7 @@
 
 long UpdateLocalVariables(ClauseTableau_p node)
 {
+	Sig_p sig = node->signature;
 	long num_variables = 0;
 	PTree_p local_variables_tree = NULL;
 	if (node->local_variables)
@@ -66,15 +67,19 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	{
 		Term_p other_branch_variable = PStackPopP(other_branches_vars_stack);
 		bool deleted = PTreeDeleteEntry(&local_variables_tree, other_branch_variable);
+		//printf("d");
 		//printf("OBV: ");TermPrint(GlobalOut, other_branch_variable, node->terms->sig, DEREF_ALWAYS);printf(" d%d\n", deleted);
-		
+		/*
 		if (PTreeFind(&local_variables_tree, other_branch_variable))
 		{
 			printf("Other branch variable still found in local variables tree...\n");
 			exit(0);
 		}
+		*/
 	}
+	//printf("\n");
 	num_variables = PTreeToPStack(local_variables, local_variables_tree);
+	//printf("# %ld local variables check\n", PStackGetSP(local_variables));
 	
 	/*
 	printf("Local var tree: ");
@@ -83,28 +88,30 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	*/
 	node->local_variables = local_variables;
 	
-	// Bug checking
-	if (num_variables)
-	{
-		//printf("%ld Local variables found! ", num_variables);
-		for (PStackPointer p = 0; p<PStackGetSP(local_variables); p++)
-		{
-			Term_p local_variable = PStackElementP(local_variables, p);
-			//TermPrint(GlobalOut, local_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
-			if (PTreeFind(&temp_variable_tree, local_variable))
-			{
-				printf("Found local variable in other branches var tree...\n");
-				printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
-				printf("Able to delete? %d\n", PTreeDeleteEntry(&temp_variable_tree, local_variable));
-				printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
-				printf("%ld nodes in temp_variable_tree.\n", PTreeNodes(temp_variable_tree));
-				//TermPrint(GlobalOut, temp_variable_tree->key, node->terms->sig, DEREF_ALWAYS);printf("\n");
-				exit(0);
-			}
+	//~ // Bug checking
+	//~ if (num_variables)
+	//~ {
+		//~ //printf("%ld Local variables found! ", num_variables);
+		//~ for (PStackPointer p = 0; p<PStackGetSP(local_variables); p++)
+		//~ {
+			//~ Term_p local_variable = PStackElementP(local_variables, p);
+			//~ printf("# Local variable ");
+			//~ TermPrint(GlobalOut, local_variable, sig,DEREF_ALWAYS);
+			//~ //TermPrint(GlobalOut, local_variable, node->terms->sig, DEREF_ALWAYS);printf(" ");
+			//~ if (PTreeFind(&temp_variable_tree, local_variable))
+			//~ {
+				//~ printf("Found local variable in other branches var tree...\n");
+				//~ printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
+				//~ printf("Able to delete? %d\n", PTreeDeleteEntry(&temp_variable_tree, local_variable));
+				//~ printf("Root of temp_variable_tree: %7p\n", temp_variable_tree->key);
+				//~ printf("%ld nodes in temp_variable_tree.\n", PTreeNodes(temp_variable_tree));
+				//~ //TermPrint(GlobalOut, temp_variable_tree->key, node->terms->sig, DEREF_ALWAYS);printf("\n");
+				//~ assert(0);
+			//~ }
 			
-		}
-		printf("\n");
-	}
+		//~ }
+		//~ printf("\n");
+	//~ }
 	/*
 	if (num_variables >= 2)
 	{
@@ -129,7 +136,7 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p *branch_vars, bool
 	ClauseTableau_p iterator = branch;
 	while (iterator)
 	{
-		if ((iterator != branch->master) ^ (include_root))
+		if ((iterator != branch->master) || (include_root))
 		{
 			num_variables += CollectVariablesAtNode(iterator, branch_vars);
 		}
@@ -146,7 +153,8 @@ long CollectVariablesOfBranch(ClauseTableau_p branch, PTree_p *branch_vars, bool
 long CollectVariablesAtNode(ClauseTableau_p node, PTree_p *var_tree)
 {
    long num_collected = 0;
-   ClauseCollectVariables(node->label, var_tree);
+   
+   num_collected += ClauseCollectVariables(node->label, var_tree);
 	
    Clause_p handle;
    if (node->folding_labels)
@@ -199,13 +207,27 @@ bool BranchIsLocal(ClauseTableau_p branch)
 {
 	PTree_p branch_vars = NULL;
 	long local_vars = UpdateLocalVariables(branch);
+	long branch_local_variables = PStackGetSP(branch->local_variables);
 	long num_vars = CollectVariablesOfBranch(branch, &branch_vars, true);
-	PTreeFree(branch_vars);
+	if (branch_local_variables != local_vars) assert(0);
+	printf("# %ld local vars, %ld total vars\n", local_vars, num_vars);
+	if (num_vars == 0)
+	{
+		PTree_p temp = NULL;
+		int no_variables = ClauseCollectVariables(branch->label, &temp);
+		printf("Clause with no variables has %d variables... ", no_variables); 
+		ClausePrint(GlobalOut, branch->label, true);
+		printf("\n");
+		PTreeFree(temp);
+		if (no_variables > num_vars) exit(0);
+	}
 	if (local_vars == num_vars)
 	{
-		//printf("# Local branch\n");
+		printf("# Local branch\n");
+		PTreeDebugPrint(GlobalOut, branch_vars);
 		return true;
 	}
+	PTreeFree(branch_vars);
 	return false;
 	
 }
@@ -215,7 +237,8 @@ bool AllBranchesAreLocal(ClauseTableau_p master)
 	ClauseTableau_p branch_handle = master->open_branches->anchor->succ;
 	while (branch_handle != master->open_branches->anchor)
 	{
-		if (!BranchIsLocal(branch_handle))
+		bool local = BranchIsLocal(branch_handle);
+		if (!local)
 		{
 			return false;
 		}

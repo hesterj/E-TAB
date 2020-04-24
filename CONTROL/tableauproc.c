@@ -104,12 +104,6 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		if (AllBranchesAreLocal(active_tableau))
-		{
-			printf("All %ld branches local!\n", active_tableau->open_branches->members);
-			ClauseTableauPrintDOTGraph(active_tableau);
-			printf("DOT graph printed\n");
-		}
 		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		if (control->closed_tableau)
 		{
@@ -201,6 +195,12 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			open_branch = open_branch->succ;
 		}
 		next_tableau:
+		if (AllBranchesAreLocal(active_tableau))
+		{
+			printf("All %ld branches local!\n", active_tableau->open_branches->members);
+			ClauseTableauPrintDOTGraph(active_tableau);
+			printf("DOT graph printed\n");
+		}
 		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;

@@ -1097,25 +1097,27 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 	}
 	else
 	{
-		printf("# Printing DOT APR graph to ~/Projects/APRTESTING/DOT/graph.dot\n");
+		printf("# Printing DOT graph to ~/Projects/APRTESTING/DOT/graph.dot\n");
 	}
 	
 	Clause_p root_label = tab->label;
 	long root_id = ClauseGetIdent(root_label);
+	// any folded up clauses here?
+	int folds = 0;
+	if (tab->folding_labels) folds = tab->folding_labels->members;
 	
 	fprintf(dotgraph, "digraph aprgraph {\n");
-	fprintf(dotgraph, "   graph [splines = true overlap=scale]\n");
 	
 	fprintf(dotgraph,"   %ld [color=Green, label=\"", root_id);
 	ClausePrint(dotgraph, root_label, true);
-	fprintf(dotgraph, "\"]\n");
+	fprintf(dotgraph, " %d\"]\n", folds);
 	
 	for (int i=0; i < tab->arity; i++)
 	{	
 		ClauseTableau_p child = tab->children[i];
 		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
 	}
-	
+	fprintf(dotgraph, "\n}");
 	fclose(dotgraph);
 }
 
@@ -1126,6 +1128,9 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 	long parent_ident = ClauseGetIdent(parent_label);
 	Clause_p label = tab->label;
 	long ident = ClauseGetIdent(label);
+	// any folded up clauses here?
+	int folds = 0;
+	if (tab->folding_labels) folds = tab->folding_labels->members;
 	
 	if (!tab->open)
 	{
@@ -1136,7 +1141,7 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 		fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
 	}
 	ClausePrint(dotgraph, label, true);
-	fprintf(dotgraph, "\"]\n");
+	fprintf(dotgraph, " %d\"]\n", folds);
 	fprintf(dotgraph,"   %ld -> %ld\n", parent_ident, ident);
 	
 	for (int i=0; i < tab->arity; i++)
