@@ -1109,7 +1109,7 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 	fprintf(dotgraph, "digraph aprgraph {\n");
 	
 	fprintf(dotgraph,"   %ld [color=Green, label=\"", root_id);
-	ClausePrint(dotgraph, root_label, true);
+	ClauseTSTPCorePrint(dotgraph, root_label, true);
 	fprintf(dotgraph, " %d\"]\n", folds);
 	
 	for (int i=0; i < tab->arity; i++)
@@ -1140,7 +1140,7 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 	{
 		fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
 	}
-	ClausePrint(dotgraph, label, true);
+	ClauseTSTPCorePrint(dotgraph, label, true);
 	fprintf(dotgraph, " %d\"]\n", folds);
 	fprintf(dotgraph,"   %ld -> %ld\n", parent_ident, ident);
 	

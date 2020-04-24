@@ -32,9 +32,8 @@ void TableauExtensionFree(TableauExtension_p ext)
 TableauControl_p TableauControlAlloc()
 {
 	TableauControl_p handle = TableauControlCellAlloc();
-	handle->terms = NULL;
-	handle->number_of_extensions = 0;
-	handle->closed_tableau = NULL;
+	handle->terms = NULL; // The termbank for this tableau control..
+	handle->number_of_extensions = 0;  // Total number of extensions done
 	return handle;
 }
 
@@ -185,7 +184,7 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
  *  detected after the work is done.
 */
 
-ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension)
+ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension, PStack_p new_tableaux)
 {
 	// Create a copy of the master tableau of the extension rule's tableau.
 	// Insert the newly created master tableau in to the distinct_tableaux. 
@@ -267,7 +266,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	}
 	else
 	{
-		TableauMasterSetInsert(distinct_tableaux, parent->master);
+		//TableauMasterSetInsert(distinct_tableaux, parent->master);
+		PStackPushP(new_tableaux, parent->master);
 	}
 	
 	// The work is done- try to close the remaining branches
@@ -328,7 +328,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 ClauseTableau_p open_branch, 
 															 TableauSet_p distinct_tableaux,
-															 Clause_p selected)
+															 Clause_p selected,
+															 PStack_p new_tableaux)
 {
 	int extensions_done = 0;
 	
@@ -377,7 +378,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 																		   head_clause, 
 																		   new_leaf_clauses, 
 																		   open_branch);
-			ClauseTableau_p maybe_extended = ClauseTableauExtensionRule(distinct_tableaux, extension_candidate);
+			ClauseTableau_p maybe_extended = ClauseTableauExtensionRule(distinct_tableaux, extension_candidate, new_tableaux);
 			TableauExtensionFree(extension_candidate);
 			if (maybe_extended)
 			{

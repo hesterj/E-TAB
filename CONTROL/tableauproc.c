@@ -11,8 +11,24 @@ long dive_depth = 10;
 /*  Forward Declarations
 */
 
+long move_new_tableaux_to_distinct(TableauSet_p distinct_tableaux, PStack_p new_tableaux);
+
 /*  Function Definitions
 */
+
+long move_new_tableaux_to_distinct(TableauSet_p distinct_tableaux, PStack_p new_tableaux)
+{
+	long num_moved = 0;
+	while (!PStackEmpty(new_tableaux))
+	{
+		ClauseTableau_p new_tab = PStackPopP(new_tableaux);
+		assert(new_tab->master_set == NULL);
+		assert(new_tab->set == NULL);
+		TableauMasterSetInsert(distinct_tableaux, new_tab);
+		num_moved += 1;
+	}
+	return num_moved;
+}
 
 /*-----------------------------------------------------------------------
 //
@@ -82,7 +98,8 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 
 ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 										     ClauseSet_p extension_candidates,
-										     int max_depth)
+										     int max_depth,
+										     PStack_p new_tableaux)
 {
 	assert(distinct_tableaux);
 	ClauseTableau_p active_tableau = NULL;
@@ -105,6 +122,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
 		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
+		printf("# %ld active tableaux\n", distinct_tableaux->members);
+		assert(active_tableau->master_pred == distinct_tableaux->anchor);
 		if (control->closed_tableau)
 		{
 			printf("# Success\n");
@@ -129,12 +148,15 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		open_branch = active_tableau->open_branches->anchor->succ;
 		number_of_extensions = 0;
 		printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
+		bool depth_exceeded = false;
 		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			if (open_branch->depth > max_depth)
 			{
+				depth_exceeded = true;
 				open_branch = open_branch->succ;
+				printf("# Max depth exceeded on branch\n");
 				continue;
 			}
 			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
@@ -147,7 +169,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			else if (fold_close_cycle_test == 0)
 			{
 				//printf("No branches could be closed in fold-close cycle.\n");
-			}
+			}			
 			else
 			{
 				printf("# Closed tableau found in fold-close cycle.\n");
@@ -171,7 +193,8 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 				number_of_extensions += ClauseTableauExtensionRuleAttemptOnBranch(control,
 																										open_branch,
 																										distinct_tableaux,
-																										selected);
+																										selected,
+																										new_tableaux);
 				//printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
 				if (control->closed_tableau)
 				{
@@ -204,15 +227,25 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;
-		if (number_of_extensions > 0)
-		{
-			//printf("Number of active tableaux before extension-free step: %ld\n", distinct_tableaux->members);
-			ClauseTableau_p trash = active_tableau->master_pred;
-			TableauMasterSetExtractEntry(trash);
-			ClauseTableauFree(trash);
-			//printf("Tableau that has been check for all extensions has been free'd. %ld tableaux.\n", distinct_tableaux->members);
-			//printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
-		}
+		
+		////////
+		
+		//~ if (number_of_extensions > 0)
+		//~ {
+			//~ //printf("Number of active tableaux before extension-free step: %ld\n", distinct_tableaux->members);
+			//~ ClauseTableau_p trash = active_tableau->master_pred;
+			//~ TableauMasterSetExtractEntry(trash);
+			//~ ClauseTableauFree(trash);
+			//~ //printf("Tableau that has been check for all extensions has been free'd. %ld tableaux.\n", distinct_tableaux->members);
+			//~ //printf("Extracted tableau that had a branch expanded on %d times\n", number_of_extensions);
+		//~ }
+		////////
+		
+		ClauseTableau_p trash = active_tableau->master_pred;
+		TableauMasterSetExtractEntry(trash);
+		ClauseTableauFree(trash);
+		
+		////////
 		assert(active_tableau);
 		//printf("Old number of distinct tableaux: %ld, Now we have: %ld\n",old_number_of_distinct_tableaux, distinct_tableaux->members);
 		old_number_of_distinct_tableaux = distinct_tableaux->members;
@@ -234,7 +267,7 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
  *  had its own term bank.
 */
 
-Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
+Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth) // BROKEN 04/24/20
 {
 	/*
 	printf("Clauses:\n");
@@ -301,6 +334,7 @@ Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 	TableauSet_p distinct_tableaux = NULL;
 	restart:
 	VarBankPushEnv(bank->vars);
+	
 	distinct_tableaux = TableauMasterSetAlloc();
 	assert(distinct_tableaux);
 	assert(extension_candidates->anchor->succ);
@@ -311,7 +345,7 @@ Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 	{
 		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
 													 extension_candidates, 
-													 current_depth);
+													 current_depth, NULL);
 		if (resulting_tab)
 		{
 			printf("Closed tableau found!\n");
@@ -352,6 +386,11 @@ Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth)
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}
+	return NULL;
+}
+
+Clause_p ConnectionTableauDepthFirst(TB_p bank, ClauseSet_p active, int max_depth)
+{
 	return NULL;
 }
 
@@ -454,19 +493,26 @@ Clause_p ConnectionTableauBatch(TB_p bank, ClauseSet_p active, int max_depth)
 	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
 	
 	VarBankPushEnv(bank->vars);
+	PStack_p new_tableaux = PStackAlloc();  // The collection of new tableaux made by extionsion rules.
+	// New tableaux are added to the collection of distinct tableaux when the depth limit is increased, as new
+	// tableaux are already at the max depth.  
 	for (int current_depth = 1; current_depth < max_depth; current_depth++)
 	{
 		resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
 													 extension_candidates, 
-													 current_depth);
+													 current_depth,
+													 new_tableaux);
+		move_new_tableaux_to_distinct(distinct_tableaux, new_tableaux);
 		printf("# Increasing maximum depth to %d\n", current_depth + 1);
 		if (resulting_tab)
 		{
+			ClauseTableauPrintDOTGraph(resulting_tab);
 			printf("Closed tableau found!\n");
 			break;
 		}
 	}
 	
+	PStackFree(new_tableaux);
 	ClauseSetFree(extension_candidates);
 	ClauseSetFree(unit_axioms);
 	VarBankPopEnv(bank->vars);

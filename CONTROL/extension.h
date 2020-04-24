@@ -21,6 +21,7 @@ typedef struct tableau_extension_cell
 typedef struct tableaucontrol_cell
 {
 	int number_of_extensions;
+	PStack_p new_tableaux;
 	ClauseTableau_p closed_tableau;
 	TB_p terms;
 }TableauControlCell, *TableauControl_p;
@@ -45,10 +46,11 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause);
 int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 ClauseTableau_p open_branch, 
 															 TableauSet_p distinct_tableaux,
-															 Clause_p selected);
+															 Clause_p selected,
+															 PStack_p new_tableaux);
 ClauseSet_p SplitClauseFresh(TB_p bank, ClauseTableau_p tableau, Clause_p clause); // Major memory eating offender
 TableauExtension_p ClauseTableauCreateExtensionJobs(ClauseTableau_p open_branch, Clause_p selected);
-ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension);
+ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension, PStack_p new_tableaux);
 										   
 TableauExtension_p TableauExtensionAlloc(Clause_p selected,
 										 Subst_p subst, 
