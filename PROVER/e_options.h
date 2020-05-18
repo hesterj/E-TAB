@@ -183,6 +183,7 @@ typedef enum
    OPT_TABLEAU,
    OPT_TABLEAU_DEPTH,
    OPT_TABLEAU_BATCH,
+   OPT_TABLEAU_EQUALITY,
    OPT_DUMMY
 }OptionCodes;
 
@@ -1386,6 +1387,14 @@ OptCell opts[] =
 		 "Specify an integer."
 		 "0 means we will process tableau serially.  This saves memory, but can take longer for proof success."
 		 "The default 1 causes proof search in batch mode, which works better and uses more memory."
+	 },
+	 {
+	 OPT_TABLEAU_EQUALITY,
+	 '\0', "tableau-equality",
+	 OptArg, "0",
+	 "Specify an integer."
+	 "The defualt 0 means that no equality axioms will be added."
+	 "If this is enabled, SRT equality axioms will be added as extension candidates."
 	 },
 
    {OPT_NOOPT,

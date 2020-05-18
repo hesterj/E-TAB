@@ -519,6 +519,14 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	{
 		return subst;
 	}
+	else 
+	{
+		printf("# Clauses not unifiable:\n");
+		ClausePrint(GlobalOut, a, true);
+		printf("\n");
+		ClausePrint(GlobalOut, b, true);
+		printf("\n");
+	}
 	
 	SubstDelete(subst);
 	

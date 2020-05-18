@@ -101,6 +101,7 @@ pid_t              pid = 0;
 int TableauOptions = 0; // John
 int TableauDepth = 2;
 int TableauBatch = 1;
+int TableauEquality = 0;
 
 FunctionProperties free_symb_prop = FPIgnoreProps;
 
@@ -553,7 +554,7 @@ int main(int argc, char* argv[])
 		if (TableauBatch == 1)
 		{
 			printf("# Tableau batch search.\n");
-			success = ConnectionTableauBatch(tableau_terms, new_axioms, TableauDepth);
+			success = ConnectionTableauBatch(tableau_terms, new_axioms, TableauDepth, TableauEquality);
 		}
 		else if (TableauBatch == 0)
 		{
@@ -910,6 +911,13 @@ CLState_p process_options(int argc, char* argv[])
    {
       switch(handle->option_code)
       {
+		case OPT_TABLEAU_EQUALITY:
+			if (strcmp(arg, "1") == 0)
+			{
+				TableauEquality = 1;
+				break;
+			}
+			break;
 		case OPT_TABLEAU:
 			if (strcmp(arg,"0") == 0)
 			{
