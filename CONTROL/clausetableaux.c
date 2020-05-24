@@ -521,11 +521,11 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
 	}
 	else 
 	{
-		printf("# Clauses not unifiable:\n");
-		ClausePrint(GlobalOut, a, true);
-		printf("\n");
-		ClausePrint(GlobalOut, b, true);
-		printf("\n");
+		//~ printf("# Clauses not unifiable:\n");
+		//~ ClausePrint(GlobalOut, a, true);
+		//~ printf("\n");
+		//~ ClausePrint(GlobalOut, b, true);
+		//~ printf("\n");
 	}
 	
 	SubstDelete(subst);
@@ -1157,5 +1157,74 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 		ClauseTableau_p child = tab->children[i];
 		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
 	}
+}
+
+/*  Checks to see if labels on leaf nodes are duplicated higher up on their branch.
+ *  If so, the branch and thus tableau is not leaf regular (or regular for that matter).
+ *  Used to prevent closure rule applications from creating irregular tableaux. 
+*/ 
+
+
+bool ClauseTableauIsLeafRegular(ClauseTableau_p tab)
+{
+	ClauseTableau_p master = tab->master;
+	TableauSet_p open_branches = master->open_branches;
+	ClauseTableau_p open_branch = open_branches->anchor->succ;
+	while (open_branch != open_branches->anchor)
+	{
+		if (ClauseTableauBranchContainsLiteral(open_branch->parent, open_branch->label->literals))
+		{
+			// irregular
+			return false;
+		}
+		open_branch = open_branch->succ;
+	}
+	return true;
+}
+
+// Attempt to unify the literal with the nodes on the branch above.
+// If one can be unified, the expansion would no longer be regular.
+
+bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
+{
+	Clause_p label = branch->label;
+	Eqn_p node_literal = label->literals;
+	ClauseTableau_p node = branch;
+	Subst_p subst = SubstAlloc();
+	while (node)
+	{
+		label = node->label;
+		node_literal = label->literals;
+		if (EqnIsPositive(literal) && EqnIsNegative(node_literal)) 
+		{
+			SubstBacktrack(subst);
+			node = node->parent;
+			continue;
+		}
+		else if (EqnIsNegative(literal) && EqnIsPositive(node_literal))
+		{
+			SubstBacktrack(subst);
+			node = node->parent;
+			continue;
+		}
+		else if (EqnUnify(literal, node_literal, subst))
+		{
+			//~ printf("Potentially irregular extension:\n");
+			//~ EqnPrint(GlobalOut, node_literal, !EqnIsPositive(node_literal), true);printf("\n");
+			//~ EqnPrint(GlobalOut, literal, !EqnIsPositive(literal), true);printf("\n");
+			if (SubstIsRenaming(subst))
+			{
+				//printf("Node clause:\n");
+				//ClausePrint(GlobalOut, label, true);printf("\n");
+				SubstDelete(subst);
+				//printf("# Branch contains literal... irregular\n");
+				return true;
+			}
+		}
+		SubstBacktrack(subst);
+		node = node->parent;
+	}
+	SubstDelete(subst);
+	return false;
 }
 

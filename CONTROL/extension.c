@@ -114,49 +114,6 @@ ClauseSet_p SplitClauseFresh(TB_p bank, ClauseTableau_p tableau, Clause_p clause
 	return set;
 }
 
-// Attempt to unify the literal with the nodes on the branch above.
-// If one can be unified, the expansion would no longer be regular.
-
-bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
-{
-	Clause_p label = branch->label;
-	Eqn_p node_literal = label->literals;
-	ClauseTableau_p node = branch;
-	Subst_p subst = SubstAlloc();
-	while (node)
-	{
-		label = node->label;
-		node_literal = label->literals;
-		if (EqnIsPositive(literal) && EqnIsNegative(node_literal)) 
-		{
-			SubstBacktrack(subst);
-			node = node->parent;
-			continue;
-		}
-		else if (EqnIsNegative(literal) && EqnIsPositive(node_literal))
-		{
-			SubstBacktrack(subst);
-			node = node->parent;
-			continue;
-		}
-		else if (EqnUnify(literal, node_literal, subst))
-		{
-			if (SubstIsRenaming(subst))
-			{
-				//printf("Node clause:\n");
-				//ClausePrint(GlobalOut, label, true);printf("\n");
-				SubstDelete(subst);
-				//printf("# Branch contains literal... irregular\n");
-				return true;
-			}
-		}
-		SubstBacktrack(subst);
-		node = node->parent;
-	}
-	SubstDelete(subst);
-	return false;
-}
-
 // Check to see if the literals of clause occur in the branch already.
 
 bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
@@ -205,8 +162,10 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	
 	ClauseTableau_p parent = tableau_copy->active_branch;
 	tableau_copy->active_branch = NULL; // We have the handle where we are working, so set this to NULL to indicate this.
-	if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
-	else parent->id = extension->selected->ident - LONG_MIN;
+	//if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
+	//else parent->id = extension->selected->ident - LONG_MIN;
+	
+	parent->id = ClauseGetIdent(extension->selected);
 	
 	Clause_p head_literal_clause = NULL;
 	TB_p bank = parent->terms;
@@ -267,6 +226,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	else
 	{
 		//TableauMasterSetInsert(distinct_tableaux, parent->master);
+		//~ printf("Printing tableau graph resulting from the extension.\n");
+		//~ ClauseTableauPrintDOTGraph(parent->master);
 		PStackPushP(new_tableaux, parent->master);
 	}
 	
@@ -332,7 +293,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 PStack_p new_tableaux)
 {
 	int extensions_done = 0;
-	
+	Sig_p sig = open_branch->master->terms->sig;
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
 	/*
 	printf("Splitting clause fresh: ");ClausePrint(GlobalOut, selected, true);
@@ -363,6 +324,8 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(open_branch->arity == 0);
 		assert(leaf_clause);
 		assert(selected);
+		assert(sig);
+		subst = NULL;
 		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
@@ -372,6 +335,10 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			printf("\033[1;31m");
 			printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
 			printf("\033[0m");
+			//~ if (subst)
+			//~ {
+				//~ printf("\n");SubstPrint(GlobalOut, subst, sig, DEREF_NEVER);printf("\n");
+			//~ }
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
 																		   subst, 

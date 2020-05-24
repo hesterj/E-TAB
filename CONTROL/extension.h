@@ -36,7 +36,6 @@ void TableauControlFree(TableauControl_p trash);
 void ClauseSetFreeAnchor(ClauseSet_p junk);
 ClauseSet_p ClauseStackToClauseSet(ClauseStack_p stack);
 
-bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal);
 bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause);
 
 

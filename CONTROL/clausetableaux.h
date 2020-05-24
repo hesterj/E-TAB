@@ -93,6 +93,9 @@ Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b);
 ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start);
 int ClauseTableauAssertCheck(ClauseTableau_p tab);
 
+bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal);
+bool ClauseTableauIsLeafRegular(ClauseTableau_p tab);
+
 void ClauseTableauPrintDOTGraph(ClauseTableau_p tab);
 void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph);
 

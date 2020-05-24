@@ -17,9 +17,16 @@ bool ClauseTableauBranchClosureRuleWrapper(ClauseTableau_p tab)
 			SubstDelete(subst);
 			return true;
 		}
-		ClauseTableauApplySubstitution(tab, subst);
+		// Regularity checking?
+		ClauseTableau_p temp = ClauseTableauMasterCopy(tab->master);
+		bool leaf_regular = ClauseTableauIsLeafRegular(temp);
+		if (leaf_regular)
+		{
+			ClauseTableauApplySubstitution(tab, subst);
+		}
+		ClauseTableauFree(temp);
 		SubstDelete(subst);
-		return true;
+		return leaf_regular;  // Subst was only applied and branch closed if the new tableaux is leaf regular
 	}
 	return false;
 }
@@ -125,7 +132,8 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p original_clause)
 			if ((subst = ClauseContradictsSet(temporary_tab, original_clause, temporary_tab->folding_labels, tab)))
 			{
 				tab->mark_int = distance_up;
-				printf("# Edge contradiction found.\n");
+				//~ printf("# Edge contradiction found.\n");
+				//~ SubstPrint(GlobalOut, subst, tab->master->terms->sig, DEREF_NEVER);printf("\n");
 				goto return_point;
 			}
 		}
