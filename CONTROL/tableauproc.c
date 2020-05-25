@@ -1,5 +1,4 @@
 #include "tableauproc.h"
-#include <omp.h>
 
 /*  Global Variables
 */
@@ -225,6 +224,10 @@ ClauseTableau_p ConnectionTableauProofSearch(TableauSet_p distinct_tableaux,
 			printf("All %ld branches local!\n", active_tableau->open_branches->members);
 			ClauseTableauPrintDOTGraph(active_tableau);
 			printf("DOT graph printed\n");
+			if (active_tableau->open_branches->members > 1)
+			{
+				AttemptToCloseBranchesWithSuperposition(active_tableau->master, extension_candidates);
+			}
 		}
 		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
