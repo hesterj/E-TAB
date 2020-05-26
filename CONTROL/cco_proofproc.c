@@ -1605,13 +1605,13 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
                   total_limit, long generated_limit, long tb_insert_limit,
                   long answer_limit)
 {
+	printf("%d CSE", ClauseSetEmpty(state->unprocessed));
    Clause_p unsatisfiable = NULL;
    long
       count = 0,
       sat_check_size_limit = control->heuristic_parms.sat_check_size_limit,
       sat_check_step_limit = control->heuristic_parms.sat_check_step_limit,
       sat_check_ttinsert_limit = control->heuristic_parms.sat_check_ttinsert_limit;
-
 
    while(!TimeIsUp &&
          !ClauseSetEmpty(state->unprocessed) &&
