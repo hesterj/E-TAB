@@ -159,7 +159,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p original_clause)
 Subst_p ClauseContradictsSet(ClauseTableau_p tab, Clause_p leaf, ClauseSet_p set, ClauseTableau_p open_branch)
 {
 	assert(set->anchor);
-	bool local_vars = false;
+	//bool local_vars = false;
 	if (PStackGetSP(open_branch->local_variables) > 0)
 	{
 		Clause_p handle = set->anchor->succ;

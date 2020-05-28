@@ -1605,7 +1605,8 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
                   total_limit, long generated_limit, long tb_insert_limit,
                   long answer_limit)
 {
-	printf("%d CSE", ClauseSetEmpty(state->unprocessed));
+	printf("%d CSE\n", ClauseSetEmpty(state->unprocessed));
+	printf("Saturate\n");
    Clause_p unsatisfiable = NULL;
    long
       count = 0,

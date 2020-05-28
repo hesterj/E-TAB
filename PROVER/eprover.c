@@ -23,7 +23,7 @@
 #include <cio_commandline.h>
 #include <cio_output.h>
 #include <ccl_relevance.h>
-#include <cco_proofproc.h>
+//#include <cco_proofproc.h>
 #include <cco_sine.h>
 #include <cio_signals.h>
 #include <ccl_unfold_defs.h>
@@ -549,12 +549,14 @@ int main(int argc, char* argv[])
 		proofstate->tableaudepth = TableauDepth;
 		srand(time(0));
 		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
-		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
+		printf("Number of axioms: %ld Number of unprocessed: %ld\n", proofstate->axioms->members, proofstate->unprocessed->members);
+		//ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
+		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->unprocessed);
 		printf("# Tableau proof search.\n");
 		if (TableauBatch == 1)
 		{
 			printf("# Tableau batch search.\n");
-			success = ConnectionTableauBatch(tableau_terms, new_axioms, TableauDepth, TableauEquality);
+			success = ConnectionTableauBatch(proofstate, proofcontrol, tableau_terms, new_axioms, TableauDepth, TableauEquality);
 		}
 		else if (TableauBatch == 0)
 		{

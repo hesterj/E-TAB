@@ -250,7 +250,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	assert(parent->arity > 0);  // Since we did an extension step, there should be children
 	if (ClauseTableauMarkClosedNodes(parent))
 	{
-		int folded_up = FoldUpCloseCycle(parent->master);
+		FoldUpCloseCycle(parent->master);
 		//printf("# Folded up %d nodes\n", folded_up);
 	}
 	
@@ -293,7 +293,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 PStack_p new_tableaux)
 {
 	int extensions_done = 0;
-	Sig_p sig = open_branch->master->terms->sig;
+	//Sig_p sig = open_branch->master->terms->sig;
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
 	/*
 	printf("Splitting clause fresh: ");ClausePrint(GlobalOut, selected, true);
@@ -324,7 +324,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(open_branch->arity == 0);
 		assert(leaf_clause);
 		assert(selected);
-		assert(sig);
+		//assert(sig);
 		subst = NULL;
 		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		

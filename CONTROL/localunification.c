@@ -18,7 +18,7 @@
 
 long UpdateLocalVariables(ClauseTableau_p node)
 {
-	Sig_p sig = node->signature;
+	//Sig_p sig = node->signature;
 	long num_variables = 0;
 	PTree_p local_variables_tree = NULL;
 	if (node->local_variables)
@@ -66,7 +66,7 @@ long UpdateLocalVariables(ClauseTableau_p node)
 	while (!PStackEmpty(other_branches_vars_stack))
 	{
 		Term_p other_branch_variable = PStackPopP(other_branches_vars_stack);
-		bool deleted = PTreeDeleteEntry(&local_variables_tree, other_branch_variable);
+		PTreeDeleteEntry(&local_variables_tree, other_branch_variable);
 		//printf("d");
 		//printf("OBV: ");TermPrint(GlobalOut, other_branch_variable, node->terms->sig, DEREF_ALWAYS);printf(" d%d\n", deleted);
 		/*
