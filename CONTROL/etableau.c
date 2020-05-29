@@ -3,24 +3,17 @@
 
 // Forward declaration
 
-Clause_p fake_saturate();
 
 // Function definitions 
 
-Clause_p fake_saturate()
-{
-	printf("Fake\n");
-	return NULL;
-}
-
-bool ECloseBranch(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p branch, ClauseSet_p extension_candidates)
+int ECloseBranch(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p branch, ClauseSet_p extension_candidates)
 {
 	ClauseSet_p branch_clauses = ClauseSetAlloc();
 	ClauseTableau_p node = branch;
 	assert(proofstate);
 	assert(proofcontrol);
 	long proc_limit = 1000;
-	printf("# Fork mobile...\n");
+	//printf("# Fork mobile...\n");
 	while (node)
 	{
 		//assert(node->set == NULL);
@@ -32,31 +25,45 @@ bool ECloseBranch(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTa
 		}
 		node = node->parent;
 	}
-	//printf("# Done collecting branch.\n");
-	//ClauseSetInsertSet(branch_clauses, branch->master->unit_axioms);
-	//ClauseSetInsertSet(branch_clauses, extension_candidates);
-	//printf("# Inserted axiom clauses.\n");
-	// Now attempt saturation
-	
 	assert(proofstate->axioms);
 	//printf("# Number of axioms: %ld\n", proofstate->axioms->members);
 	//printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
 	//printf("# Number of branch axioms: %ld\n", branch_clauses->members);
 	//printf("# Depth of branch: %d\n", branch->depth);
-	ClauseSetInsertSet(proofstate->unprocessed, branch_clauses);
-
-	fake_saturate();
+	//ClauseSetInsertSet(proofstate->unprocessed, branch_clauses);
+	
+	// Process the clauses of the branch first!
+	EvaluateClauseSet(proofstate, proofcontrol, branch_clauses);
+	Clause_p clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
+	printf("Manually processed clause set.\n");
+	if (clause)
+	{
+		printf("# Contradiction found while processing branch clauses\n");
+		return PROOF_FOUND;
+	}
+	
+	//~ while (!ClauseSetEmpty(branch_clauses))
+	//~ {
+		//~ Clause_p clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
+		//~ printf("Manually processed a clause.\n");
+		//~ if (clause)
+		//~ {
+			//~ printf("# Contradiction found while processing branch clauses\n");
+			//~ return PROOF_FOUND;
+		//~ }
+	//~ }
+	ClauseSetFree(branch_clauses);
+	
+	// Now do normal saturation
 	Clause_p success = Saturate(proofstate, proofcontrol, LONG_MAX,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
-	//Clause_p success = NULL;
-	//printf("# Bogey\n");
-	ClauseSetFree(branch_clauses);
+	//ClauseSetFree(branch_clauses);
 	if (success)
 	{
-		return true;
+		return PROOF_FOUND;
 	}
-	return false;
+	return OUT_OF_MEMORY;
 }
 
 bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p master, ClauseSet_p extension_candidates)
@@ -67,6 +74,7 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 	int num_open_branches = (int) open_branches->members;
 	//printf("Attempting to create %d subjobs\n", num_open_branches);
 	pid_t pool[num_open_branches];
+	int return_status[num_open_branches];
 	
 	// Collect the branches in the array
 	ClauseTableau_p handle = open_branches->anchor->succ;
@@ -91,21 +99,17 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 			// Collect the branch clauses
 			ClauseTableau_p branch = branches[i];
 			SilentTimeOut = true;
-			//printf("# %d OK.\n", i);
-			bool closed = ECloseBranch(proofstate, proofcontrol, branch, extension_candidates);
-			if (closed)
-			{
-				printf("Managed to close a local branch with Saturate!\n");
-			}
-			//printf("# %d Completed.\n", i);
-			exit(closed);
+			int branch_status = ECloseBranch(proofstate, proofcontrol, branch, extension_candidates);
+			exit(branch_status);
 		}
 		else 
 		{
 			pool[i] = worker;
+			return_status[i] = 0;
 		}
 	}
 	//printf("# Waiting...\n");
+	bool all_successful = true;
 	for (int i=0; i<num_open_branches; i++)
 	{
 		respid = -1;
@@ -119,12 +123,13 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
             status = WEXITSTATUS(raw_status);
             if((status == SATISFIABLE) || (status == PROOF_FOUND))
             {
-					printf("Need to fix the status received from forks!\n");
-               //exit(status);
+					printf("Proof found on branch!\n");
+					return_status[i] = 1;
             }
             else
             {
-               fprintf(GlobalOut, "# No success with fork\n");
+					all_successful = false;
+               //fprintf(GlobalOut, "# No success with fork\n");
             }
          }
          else
@@ -135,6 +140,12 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 	}
 	
 	// Process any results
+	
+	if (all_successful)
+	{
+		printf("All remaining open branches were closed with E!\n");
+		exit(0);
+	}
 	
 	// Exit and return to tableaux proof search
 	printf("Made jobs and successfully killed them.\n");

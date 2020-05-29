@@ -125,7 +125,8 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		assert(active_tableau->master_pred == distinct_tableaux->anchor);
 		if (control->closed_tableau)
 		{
-			printf("# Success\n");
+			printf("# Success, closed tableau found.\n");
+			ClauseTableauPrintDOTGraph(control->closed_tableau);
 			exit(0);
 		}
 		else if (distinct_tableaux->members == 1)
@@ -222,8 +223,8 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		if (AllBranchesAreLocal(active_tableau))
 		{
 			printf("All %ld branches local!\n", active_tableau->open_branches->members);
-			ClauseTableauPrintDOTGraph(active_tableau);
-			printf("DOT graph printed\n");
+			//~ ClauseTableauPrintDOTGraph(active_tableau);
+			//~ printf("DOT graph printed\n");
 			if (active_tableau->open_branches->members > 1)
 			{
 				AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master, extension_candidates);

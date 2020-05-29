@@ -1109,9 +1109,11 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 	}
 	
 	Clause_p root_label = tab->label;
+	assert(root_label);
 	long root_id = ClauseGetIdent(root_label);
 	// any folded up clauses here?
 	int folds = 0;
+	assert(tab->folding_labels);
 	if (tab->folding_labels) folds = tab->folding_labels->members;
 	
 	fprintf(dotgraph, "digraph aprgraph {\n");
@@ -1123,6 +1125,7 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 	for (int i=0; i < tab->arity; i++)
 	{	
 		ClauseTableau_p child = tab->children[i];
+		assert(child);
 		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
 	}
 	fprintf(dotgraph, "\n}");

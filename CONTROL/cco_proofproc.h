@@ -76,7 +76,10 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
                   long answer_limit);
 Clause_p SATCheck(ProofState_p state, ProofControl_p control);
 
+Clause_p ProcessClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_p clause_set,
+                       long answer_limit);
 
+void EvaluateClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_p set);
 
 #endif
 

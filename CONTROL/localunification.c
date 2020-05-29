@@ -210,21 +210,21 @@ bool BranchIsLocal(ClauseTableau_p branch)
 	long branch_local_variables = PStackGetSP(branch->local_variables);
 	long num_vars = CollectVariablesOfBranch(branch, &branch_vars, true);
 	if (branch_local_variables != local_vars) assert(0);
-	printf("# %ld local vars, %ld total vars\n", local_vars, num_vars);
+	//printf("# %ld local vars, %ld total vars\n", local_vars, num_vars);
 	if (num_vars == 0)
 	{
 		PTree_p temp = NULL;
 		int no_variables = ClauseCollectVariables(branch->label, &temp);
-		printf("Clause with no variables has %d variables... ", no_variables); 
-		ClausePrint(GlobalOut, branch->label, true);
-		printf("\n");
+		//printf("Clause with no variables has %d variables... ", no_variables); 
+		//ClausePrint(GlobalOut, branch->label, true);
+		//printf("\n");
 		PTreeFree(temp);
-		if (no_variables > num_vars) exit(0);
+		assert(no_variables <= num_vars);
 	}
 	if (local_vars == num_vars)
 	{
-		printf("# Local branch\n");
-		PTreeDebugPrint(GlobalOut, branch_vars);
+		//printf("# Local branch\n");
+		//PTreeDebugPrint(GlobalOut, branch_vars);
 		return true;
 	}
 	PTreeFree(branch_vars);
