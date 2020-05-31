@@ -80,6 +80,8 @@ Clause_p ProcessClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_
                        long answer_limit);
 
 void EvaluateClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_p set);
+Clause_p cleanup_unprocessed_clauses(ProofState_p state,
+                                            ProofControl_p control);
 
 #endif
 

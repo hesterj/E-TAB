@@ -986,7 +986,7 @@ static long term_find_rw_clauses(Clause_p demod,
             res += clause_tree_push(stack, termocc->pl.occs.rw_full);
          }
          if(!TermIsRewritten(term) || (rwres == RWAlwaysRewritable))
-         {
+         {	
             Term_p tmp_rewritten = MakeRewrittenTerm(term, rterm, remains, eqn->bank);
             rterm = TBInsertInstantiated(eqn->bank, tmp_rewritten);
 
@@ -994,6 +994,12 @@ static long term_find_rw_clauses(Clause_p demod,
             {
                TermTopFree(tmp_rewritten);
             }
+            if (term == rterm)
+            {
+					printf("Error incoming!  Printing lterm and rterm in term_find_rw_clauses.\n");  //J
+					TermPrint(GlobalOut, lterm, eqn->bank->sig, DEREF_NEVER);printf("\n");  //J
+					TermPrint(GlobalOut, rterm, eqn->bank->sig, DEREF_NEVER);printf("\n");  //J
+				}
             TermAddRWLink(term, rterm, demod, ClauseIsSOS(demod), rwres);
             //TermDeleteRWLink(term);
          }
@@ -1037,6 +1043,7 @@ static long tree_find_rw_clauses(Clause_p demod,
    SubtermTree_p cell;
 
    iterstack = PTreeTraverseInit(termtree);
+   assert(lterm != rterm);
 
    while((cell = PTreeTraverseNext(iterstack)))
    {
@@ -1079,6 +1086,7 @@ static long find_rewritable_clauses_indexed(Clause_p demod,
    SubtermTree_p tree;
 
    FPIndexFindMatchable(index, lterm, termtrees);
+	assert(lterm != rterm);
 
    while(!PStackEmpty(termtrees))
    {

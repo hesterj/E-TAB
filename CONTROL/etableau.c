@@ -6,53 +6,64 @@
 
 // Function definitions 
 
-int ECloseBranch(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p branch, ClauseSet_p extension_candidates)
+int ECloseBranch(ProofState_p proofstate, 
+					  ProofControl_p proofcontrol, 
+					  ClauseTableau_p branch, 
+					  ClauseSet_p extension_candidates)
 {
 	ClauseSet_p branch_clauses = ClauseSetAlloc();
 	ClauseTableau_p node = branch;
 	assert(proofstate);
 	assert(proofcontrol);
 	long proc_limit = 1000;
-	//printf("# Fork mobile...\n");
+	;
 	while (node)
 	{
 		//assert(node->set == NULL);
-		Clause_p label = node->label;
-		ClauseSetInsert(branch_clauses, label);
+		if (node != node->master)
+		{
+			//Clause_p label = ClauseCopyFresh(node->label, branch);
+			Clause_p label = node->label;
+			label->weight = ClauseStandardWeight(label);
+			ClauseSetIndexedInsertClause(branch_clauses, label);
+		}
 		if (node->folding_labels)
 		{
-			ClauseSetInsertSet(branch_clauses, node->folding_labels);
+			ClauseSetIndexedInsertClauseSet(branch_clauses, node->folding_labels);
 		}
 		node = node->parent;
 	}
-	assert(proofstate->axioms);
-	//printf("# Number of axioms: %ld\n", proofstate->axioms->members);
-	//printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
-	//printf("# Number of branch axioms: %ld\n", branch_clauses->members);
-	//printf("# Depth of branch: %d\n", branch->depth);
-	//ClauseSetInsertSet(proofstate->unprocessed, branch_clauses);
 	
-	// Process the clauses of the branch first!
-	EvaluateClauseSet(proofstate, proofcontrol, branch_clauses);
-	Clause_p clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
-	printf("Manually processed clause set.\n");
+	printf("# Manually processing clause set containing:\n");
+	ClauseSetPrint(GlobalOut, branch_clauses, true);
+	printf("\n###\n");
+	
+	Clause_p clause;
+	int count = 0;
+	while (!ClauseSetEmpty(branch_clauses))
+	{
+		clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
+		if (clause) return PROOF_FOUND;
+		clause = cleanup_unprocessed_clauses(proofstate, proofcontrol);
+		if (clause) return PROOF_FOUND;
+		count++;
+	}
 	if (clause)
 	{
 		printf("# Contradiction found while processing branch clauses\n");
 		return PROOF_FOUND;
 	}
-	
-	//~ while (!ClauseSetEmpty(branch_clauses))
-	//~ {
-		//~ Clause_p clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
-		//~ printf("Manually processed a clause.\n");
-		//~ if (clause)
-		//~ {
-			//~ printf("# Contradiction found while processing branch clauses\n");
-			//~ return PROOF_FOUND;
-		//~ }
-	//~ }
+	printf("# Number of axioms: %ld\n", proofstate->axioms->members);
+	printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
+	printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
+	printf("# Number of branch axioms: %ld\n", branch_clauses->members);
+	printf("# Depth of branch: %d\n", branch->depth);
+	printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
+	printf("# %d branch clauses processed.\n", count);
 	ClauseSetFree(branch_clauses);
+	printf("# Unprocessed clauses\n");
+	ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
+	printf("# \n");
 	
 	// Now do normal saturation
 	Clause_p success = Saturate(proofstate, proofcontrol, LONG_MAX,
@@ -61,6 +72,8 @@ int ECloseBranch(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTab
 	//ClauseSetFree(branch_clauses);
 	if (success)
 	{
+		printf("Saturate returned empty clause.\n");
+		ProofStateStatisticsPrint(GlobalOut, proofstate);
 		return PROOF_FOUND;
 	}
 	return OUT_OF_MEMORY;
@@ -104,6 +117,7 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 		}
 		else 
 		{
+			exit(0);
 			pool[i] = worker;
 			return_status[i] = 0;
 		}

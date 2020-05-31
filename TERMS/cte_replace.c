@@ -68,8 +68,20 @@ void TermAddRWLink(Term_p term, Term_p replace, struct clause_cell *demod, bool 
 {
    assert(term);
    assert(replace);
+   
+   Sig_p sig = demod->literals->bank->sig;
+   
+   #ifndef DNDEBUG
+   if (term == replace)
+   {
+		assert(NULL);
+		printf("term: ");TermPrint(GlobalOut, term, sig, DEREF_NEVER);printf("\n");
+		printf("replace: ");TermPrint(GlobalOut, replace, sig, DEREF_NEVER);printf("\n");
+		Error("Term is identical with replace in TermAddRWLink.", 1);
+	}
+	#endif
    assert(term!=replace);
-
+	
    TermCellSetProp(term, TPIsRewritten);
 
    if(type==RWAlwaysRewritable)

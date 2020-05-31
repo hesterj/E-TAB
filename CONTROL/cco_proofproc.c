@@ -172,6 +172,10 @@ eliminate_backward_rewritten_clauses(ProofState_p
                                      state, ProofControl_p control,
                                      Clause_p clause, SysDate *date)
 {
+	printf("eliminate_backward_rewritten_clauses: "); //J
+	ClausePrint(GlobalOut, clause, true);printf("\n"); //J 
+	
+	/////////
    long old_lit_count = state->tmp_store->literals,
       old_clause_count= state->tmp_store->members;
    bool min_rw = false;
@@ -814,7 +818,7 @@ Clause_p replacing_inferences(ProofState_p state, ProofControl_p
 //
 /----------------------------------------------------------------------*/
 
-static Clause_p cleanup_unprocessed_clauses(ProofState_p state,
+Clause_p cleanup_unprocessed_clauses(ProofState_p state,
                                             ProofControl_p control)
 {
    long long current_storage;
@@ -1649,28 +1653,6 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
       {
          break;
       }
-      //~ if (state->tableauoptions > 1)
-      //~ {
-			//~ TB_p tableau_bank = TBAlloc(state->terms->sig);
-			//~ ClauseSet_p randomly_selected_from_unprocessed = ClauseSetAlloc();
-			//~ Clause_p rand_handle = state->unprocessed->anchor->succ;
-			//~ assert(rand_handle);
-			//~ while (rand_handle != state->unprocessed->anchor)
-			//~ {
-				//~ bool random_bool = rand() & 1;
-				//~ if (random_bool)
-				//~ {
-					//~ Clause_p copy = ClauseCopy(rand_handle, tableau_bank);
-					//~ //Clause_p copy = ClauseCopy(rand_handle, state->terms);
-					//~ ClauseSetInsert(randomly_selected_from_unprocessed, copy);
-				//~ }
-				//~ if (randomly_selected_from_unprocessed->members > 4) break;
-				//~ rand_handle = rand_handle->succ;
-			//~ }
-			//~ unsatisfiable = ConnectionTableauSerial(tableau_bank, randomly_selected_from_unprocessed, state->tableaudepth);
-			//~ ClauseSetFree(randomly_selected_from_unprocessed);
-			//~ TBFree(tableau_bank);
-		//~ }
 		if (unsatisfiable)
 		{
 			PStackPushP(state->extract_roots, unsatisfiable);
@@ -1714,9 +1696,11 @@ Clause_p ProcessClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_
    SysDate          clausedate;
 	
 	assert(clause_set);
-	clause = control->hcb->hcb_select(control->hcb,
-                                     clause_set);
-	assert(!clause->set);
+	//~ clause = control->hcb->hcb_select(control->hcb,
+                                     //~ clause_set);
+   clause = ClauseSetExtractFirst(clause_set);
+   
+	assert(clause);
    if(!clause)
    {
       return NULL;
@@ -1728,6 +1712,7 @@ Clause_p ProcessClauseSet(ProofState_p state, ProofControl_p control, ClauseSet_
    }
    assert(clause);
 
+	//ClauseSetExtractEntry(clause);
    ClauseRemoveEvaluations(clause);
    // Orphans have been excluded during selection now
 
