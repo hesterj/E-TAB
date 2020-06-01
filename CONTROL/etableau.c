@@ -37,48 +37,50 @@ int ECloseBranch(ProofState_p proofstate,
 	//ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
 	//printf("\n");
 	
+	printf("# Number of branch axioms: %ld\n", branch_clauses->members);
+	ClauseSetSetProp(branch_clauses, CPInitial);
 	ClauseSetSetProp(branch_clauses, CPLimitedRW);
-	ClauseSetInsertSet(proofstate->unprocessed, branch_clauses);
-	ClauseSetFree(branch_clauses);
 	
-	//ProofStateInit(proofstate, proofcontrol);
-	
-	//~ printf("# Manually processing clause set containing:\n");
-	//~ ClauseSetPrint(GlobalOut, branch_clauses, true);
-	//~ printf("\n###\n");
-	
-	//~ Clause_p clause;
-	//~ int count = 0;
-	//~ while (!ClauseSetEmpty(branch_clauses))
-	//~ {
-		//~ clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
-		//~ if (clause) return PROOF_FOUND;
-		//~ clause = cleanup_unprocessed_clauses(proofstate, proofcontrol);
-		//~ if (clause) return PROOF_FOUND;
-		//~ count++;
-	//~ }
-	//~ if (clause)
-	//~ {
-		//~ printf("# Contradiction found while processing branch clauses\n");
-		//~ return PROOF_FOUND;
-	//~ }
-	//~ printf("# Number of axioms: %ld\n", proofstate->axioms->members);
-	//~ printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
-	//~ printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
-	//~ printf("# Number of branch axioms: %ld\n", branch_clauses->members);
-	//~ printf("# Depth of branch: %d\n", branch->depth);
-	//~ printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
-	//~ printf("# %d branch clauses processed.\n", count);
-	//~ printf("# Unprocessed clauses\n");
-	//~ ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
-	//~ printf("# \n");
-	
-	// Now do normal saturation
-	printf("# Saturating branch...\n");
+	ClauseSet_p *axioms_ref = &(proofstate->axioms);
+	assert(proofstate->unprocessed);
+	ClauseSet_p *unprocessed_ref = &(proofstate->unprocessed);
+	assert(*unprocessed_ref);
+	assert((*unprocessed_ref)->members == proofstate->unprocessed->members);
+	proofstate->axioms = branch_clauses;
+	proofstate->unprocessed = ClauseSetAlloc();
+	ProofStateInit(proofstate, proofcontrol);
 	Clause_p success = Saturate(proofstate, proofcontrol, LONG_MAX,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
+	if (success)
+	{
+		printf("Superposition contradiction purely within branch!\n");
+		return PROOF_FOUND;
+	}
+	assert(proofstate->unprocessed->members == 0);
+	ClauseSetFree(proofstate->unprocessed);
+	proofstate->unprocessed = NULL;
+	proofstate->axioms = *axioms_ref;
+	assert(*unprocessed_ref);
+	proofstate->unprocessed = *unprocessed_ref;
+	assert(proofstate->unprocessed);
+	
+	printf("# Number of axioms: %ld\n", proofstate->axioms->members);
+	printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
+	printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
+	printf("# Depth of branch: %d\n", branch->depth);
+	printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
+	//~ printf("# Unprocessed clauses\n");
+	//~ ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
+	//~ printf("# \n");
+	ClauseSetFree(branch_clauses);
+	// Now do normal saturation
+	printf("# Saturating branch...\n");
+	success = Saturate(proofstate, proofcontrol, LONG_MAX,
+							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
+							 LLONG_MAX, LONG_MAX);
 	//ClauseSetFree(branch_clauses);
+	printf("# Exited saturation...\n");
 	if (success)
 	{
 		printf("Saturate returned empty clause.\n");
