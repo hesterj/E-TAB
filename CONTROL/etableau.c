@@ -16,7 +16,6 @@ int ECloseBranch(ProofState_p proofstate,
 	assert(proofstate);
 	assert(proofcontrol);
 	long proc_limit = 1000;
-	;
 	while (node)
 	{
 		//assert(node->set == NULL);
@@ -34,38 +33,48 @@ int ECloseBranch(ProofState_p proofstate,
 		node = node->parent;
 	}
 	
-	printf("# Manually processing clause set containing:\n");
-	ClauseSetPrint(GlobalOut, branch_clauses, true);
-	printf("\n###\n");
+	//printf("# Unprocessed clauses of proofstate:\n");
+	//ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
+	//printf("\n");
 	
-	Clause_p clause;
-	int count = 0;
-	while (!ClauseSetEmpty(branch_clauses))
-	{
-		clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
-		if (clause) return PROOF_FOUND;
-		clause = cleanup_unprocessed_clauses(proofstate, proofcontrol);
-		if (clause) return PROOF_FOUND;
-		count++;
-	}
-	if (clause)
-	{
-		printf("# Contradiction found while processing branch clauses\n");
-		return PROOF_FOUND;
-	}
-	printf("# Number of axioms: %ld\n", proofstate->axioms->members);
-	printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
-	printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
-	printf("# Number of branch axioms: %ld\n", branch_clauses->members);
-	printf("# Depth of branch: %d\n", branch->depth);
-	printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
-	printf("# %d branch clauses processed.\n", count);
+	ClauseSetSetProp(branch_clauses, CPLimitedRW);
+	ClauseSetInsertSet(proofstate->unprocessed, branch_clauses);
 	ClauseSetFree(branch_clauses);
-	printf("# Unprocessed clauses\n");
-	ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
-	printf("# \n");
+	
+	//ProofStateInit(proofstate, proofcontrol);
+	
+	//~ printf("# Manually processing clause set containing:\n");
+	//~ ClauseSetPrint(GlobalOut, branch_clauses, true);
+	//~ printf("\n###\n");
+	
+	//~ Clause_p clause;
+	//~ int count = 0;
+	//~ while (!ClauseSetEmpty(branch_clauses))
+	//~ {
+		//~ clause = ProcessClauseSet(proofstate, proofcontrol, branch_clauses, LONG_MAX);
+		//~ if (clause) return PROOF_FOUND;
+		//~ clause = cleanup_unprocessed_clauses(proofstate, proofcontrol);
+		//~ if (clause) return PROOF_FOUND;
+		//~ count++;
+	//~ }
+	//~ if (clause)
+	//~ {
+		//~ printf("# Contradiction found while processing branch clauses\n");
+		//~ return PROOF_FOUND;
+	//~ }
+	//~ printf("# Number of axioms: %ld\n", proofstate->axioms->members);
+	//~ printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
+	//~ printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
+	//~ printf("# Number of branch axioms: %ld\n", branch_clauses->members);
+	//~ printf("# Depth of branch: %d\n", branch->depth);
+	//~ printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
+	//~ printf("# %d branch clauses processed.\n", count);
+	//~ printf("# Unprocessed clauses\n");
+	//~ ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
+	//~ printf("# \n");
 	
 	// Now do normal saturation
+	printf("# Saturating branch...\n");
 	Clause_p success = Saturate(proofstate, proofcontrol, LONG_MAX,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);

@@ -172,8 +172,8 @@ eliminate_backward_rewritten_clauses(ProofState_p
                                      state, ProofControl_p control,
                                      Clause_p clause, SysDate *date)
 {
-	printf("eliminate_backward_rewritten_clauses: "); //J
-	ClausePrint(GlobalOut, clause, true);printf("\n"); //J 
+	//~ printf("eliminate_backward_rewritten_clauses: "); //J
+	//~ ClausePrint(GlobalOut, clause, true);printf("\n"); //J 
 	
 	/////////
    long old_lit_count = state->tmp_store->literals,

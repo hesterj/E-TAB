@@ -548,20 +548,20 @@ int main(int argc, char* argv[])
 		proofstate->tableauoptions = TableauOptions;
 		proofstate->tableaudepth = TableauDepth;
 		srand(time(0));
-		TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
+		//TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
 		printf("Number of axioms: %ld Number of unprocessed: %ld\n", proofstate->axioms->members, proofstate->unprocessed->members);
 		//ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
-		ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->unprocessed);
+		ClauseSet_p new_axioms = ClauseSetCopy(proofstate->terms, proofstate->unprocessed);
 		printf("# Tableau proof search.\n");
 		if (TableauBatch == 1)
 		{
 			printf("# Tableau batch search.\n");
-			success = ConnectionTableauBatch(proofstate, proofcontrol, tableau_terms, new_axioms, TableauDepth, TableauEquality);
+			success = ConnectionTableauBatch(proofstate, proofcontrol, proofstate->terms, new_axioms, TableauDepth, TableauEquality);
 		}
 		else if (TableauBatch == 0)
 		{
 			printf("# Tableau serial search.\n");
-			success = ConnectionTableauSerial(tableau_terms, new_axioms, TableauDepth);
+			success = ConnectionTableauSerial(proofstate->terms, new_axioms, TableauDepth);
 		}
 		else
 		{
@@ -573,7 +573,7 @@ int main(int argc, char* argv[])
 			PStackPushP(proofstate->extract_roots, EmptyClauseAlloc());
 		}
 		ClauseSetFree(new_axioms);
-		TBFree(tableau_terms);
+		//TBFree(tableau_terms);
 		if (!success)
 		{
 			TSTPOUT(GlobalOut, "ResourceOut");
