@@ -41,11 +41,8 @@ int ECloseBranch(ProofState_p proofstate,
 	ClauseSetSetProp(branch_clauses, CPInitial);
 	ClauseSetSetProp(branch_clauses, CPLimitedRW);
 	
-	ClauseSet_p *axioms_ref = &(proofstate->axioms);
-	assert(proofstate->unprocessed);
-	ClauseSet_p *unprocessed_ref = &(proofstate->unprocessed);
-	assert(*unprocessed_ref);
-	assert((*unprocessed_ref)->members == proofstate->unprocessed->members);
+	ClauseSet_p axioms = proofstate->axioms;
+	ClauseSet_p unproc = proofstate->unprocessed;
 	proofstate->axioms = branch_clauses;
 	proofstate->unprocessed = ClauseSetAlloc();
 	ProofStateInit(proofstate, proofcontrol);
@@ -60,9 +57,8 @@ int ECloseBranch(ProofState_p proofstate,
 	assert(proofstate->unprocessed->members == 0);
 	ClauseSetFree(proofstate->unprocessed);
 	proofstate->unprocessed = NULL;
-	proofstate->axioms = *axioms_ref;
-	assert(*unprocessed_ref);
-	proofstate->unprocessed = *unprocessed_ref;
+	proofstate->axioms = axioms;
+	proofstate->unprocessed = unproc;
 	assert(proofstate->unprocessed);
 	
 	printf("# Number of axioms: %ld\n", proofstate->axioms->members);
@@ -70,9 +66,7 @@ int ECloseBranch(ProofState_p proofstate,
 	printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
 	printf("# Depth of branch: %d\n", branch->depth);
 	printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
-	//~ printf("# Unprocessed clauses\n");
-	//~ ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
-	//~ printf("# \n");
+	
 	ClauseSetFree(branch_clauses);
 	// Now do normal saturation
 	printf("# Saturating branch...\n");
@@ -81,6 +75,7 @@ int ECloseBranch(ProofState_p proofstate,
 							 LLONG_MAX, LONG_MAX);
 	//ClauseSetFree(branch_clauses);
 	printf("# Exited saturation...\n");
+	ProofStateStatisticsPrint(GlobalOut, proofstate);
 	if (success)
 	{
 		printf("Saturate returned empty clause.\n");
@@ -90,7 +85,10 @@ int ECloseBranch(ProofState_p proofstate,
 	return OUT_OF_MEMORY;
 }
 
-bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p master, ClauseSet_p extension_candidates)
+bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, 
+															ProofControl_p proofcontrol, 
+															ClauseTableau_p master, 
+															ClauseSet_p extension_candidates)
 {
 	//ProofState_p proofstate = master->state;
 	//ProofControl_p proofcontrol = master->control;
@@ -128,13 +126,13 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 		}
 		else 
 		{
-			exit(0);
 			pool[i] = worker;
 			return_status[i] = 0;
 		}
 	}
 	//printf("# Waiting...\n");
 	bool all_successful = true;
+	bool any_successful = false;
 	for (int i=0; i<num_open_branches; i++)
 	{
 		respid = -1;
@@ -150,6 +148,7 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
             {
 					printf("Proof found on branch!\n");
 					return_status[i] = 1;
+					any_successful = true;
             }
             else
             {
@@ -168,11 +167,24 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, ProofContr
 	
 	if (all_successful)
 	{
-		printf("All remaining open branches were closed with E!\n");
+		printf("# All remaining open branches were closed with E!\n");
 		exit(0);
 	}
-	
+	else if (any_successful)
+	{
+		printf("# Marking saturation closed branches as such.\n");
+		for (int i=0; i<num_open_branches; i++)
+		{
+			bool closed = return_status[i];
+			if (closed)
+			{
+				ClauseTableau_p closed_branch = branches[i];
+				TableauSetExtractEntry(closed_branch);
+				closed_branch->open = false;
+			}
+		}
+		return true;
+	}
 	// Exit and return to tableaux proof search
-	printf("Made jobs and successfully killed them.\n");
-	return true;
+	return false;
 }

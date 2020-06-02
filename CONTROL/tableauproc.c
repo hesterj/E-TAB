@@ -104,16 +104,8 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 	ClauseTableau_p active_tableau = NULL;
 	ClauseTableau_p open_branch = NULL;
 	assert(distinct_tableaux->anchor->master_succ);
-	/*
-	ClauseSet_p extension_candidates = 
-	ClauseSetCopy(distinct_tableaux->anchor->master_succ->terms, distinct_tableaux->anchor->master_succ->active); // These are the clauses that can be split
-	*/
-	printf("# Extension candidates: \n");
-	ClauseSetPrint(GlobalOut, extension_candidates, true);
-	printf("\n");
+	
 	int number_of_extensions = 0;
-	//long old_number_of_distinct_tableaux = distinct_tableaux->members;
-	//assert(old_number_of_distinct_tableaux);
 	TableauControl_p control = TableauControlAlloc();
 	long MAX_TABLEAUX = 8000000;
 	
@@ -145,11 +137,22 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		assert(active_tableau->label);
 		assert(active_tableau->master_set);
 		ClauseTableauAssertCheck(active_tableau);
-		open_branch = active_tableau->open_branches->anchor->succ;
 		number_of_extensions = 0;
 		printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
 		//bool depth_exceeded = false;
 		
+		if (AllBranchesAreLocal(active_tableau))
+		{
+			printf("All %ld branches local!\n", active_tableau->open_branches->members);
+			//~ ClauseTableauPrintDOTGraph(active_tableau);
+			//~ printf("DOT graph printed\n");
+			if (active_tableau->open_branches->members > 1)
+			{
+				AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master, extension_candidates);
+			}
+		}
+		
+		open_branch = active_tableau->open_branches->anchor->succ;
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			//printf("Branch iter\n");
@@ -220,16 +223,6 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			open_branch = open_branch->succ;
 		}
 		next_tableau:
-		if (AllBranchesAreLocal(active_tableau))
-		{
-			printf("All %ld branches local!\n", active_tableau->open_branches->members);
-			//~ ClauseTableauPrintDOTGraph(active_tableau);
-			//~ printf("DOT graph printed\n");
-			if (active_tableau->open_branches->members > 1)
-			{
-				AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master, extension_candidates);
-			}
-		}
 		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
 		assert(active_tableau != active_tableau->master_succ);
 		active_tableau = active_tableau->master_succ;
