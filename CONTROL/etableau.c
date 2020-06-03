@@ -83,7 +83,7 @@ int ECloseBranch(ProofState_p proofstate,
 	return RESOURCE_OUT;
 }
 
-bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, 
+int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, 
 															ProofControl_p proofcontrol, 
 															ClauseTableau_p master)
 {
@@ -136,7 +136,6 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 		}
 	}
 	//printf("# Waiting...\n");
-	bool any_successful = false;
 	bool all_successful = false;
 	int successful_count = 0;
 	for (int i=0; i<num_open_branches; i++)
@@ -151,6 +150,7 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 			//~ }
 			worker = pool[i];
 			if (worker == 0) break;
+			assert(branches[i]);
 			respid = waitpid(worker, &raw_status, 0);
 			//printf("Fork %d dead, respid %d, status %d.\n", worker, respid, raw_status);
 			if (WIFEXITED(raw_status))
@@ -170,8 +170,8 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 					closed_branch->open = false;
 					closed_branch->saturation_closed = true;
 					return_status[i] = PROOF_FOUND;
-					any_successful = true;
 					successful_count++;
+					printf("Branch marked as closed.\n");
 					break;
             }
             else
@@ -201,26 +201,6 @@ bool AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 		ClauseTableauPrintDOTGraph(master);
 		exit(0);
 	}
-	//~ else if (any_successful)
-	//~ {
-		//~ printf("# Marking saturation closed branches as such.\n");
-		//~ for (int i=0; i<num_open_branches; i++)
-		//~ {
-			//~ if (return_status[i] == SATISFIABLE)
-			//~ {
-				//~ printf("# Branch satisfiable\n");
-				//~ printf("# SZS status Satisfiable\n");
-				//~ exit(0);
-			//~ }
-			//~ if (return_status[i] == PROOF_FOUND)
-			//~ {
-				//~ ClauseTableau_p closed_branch = branches[i];
-				//~ TableauSetExtractEntry(closed_branch);
-				//~ closed_branch->open = false;
-			//~ }
-		//~ }
-		//~ return true;
-	//~ }
 	// Exit and return to tableaux proof search
-	return false;
+	return successful_count;
 }
