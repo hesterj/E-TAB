@@ -24,6 +24,7 @@ typedef struct clausetableau
 	TB_p          terms;
 	Sig_p         signature;
 	bool open;
+	bool saturation_closed;
 	bool head_lit;  //If this node was made as a head literal in an extension step, it is true.  Otherwise false.
 	int depth;		// depth of the node in the tableau
 	int position;   // If the node is a child, this is its position in the children array of the parent

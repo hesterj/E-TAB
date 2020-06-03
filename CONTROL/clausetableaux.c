@@ -23,6 +23,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->folding_labels = NULL;
 	handle->set = NULL;
 	handle->head_lit = false;
+	handle->saturation_closed = false;
 	handle->id = 0;
 	handle->max_var = 0;
 	handle->info = NULL;
@@ -1151,7 +1152,7 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 		fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
 	}
 	ClauseTSTPCorePrint(dotgraph, label, true);
-	fprintf(dotgraph, " %d\"]\n", folds);
+	fprintf(dotgraph, " d:%d f:%d s:%d\"]\n", tab->depth, folds, tab->saturation_closed);
 	fprintf(dotgraph,"   %ld -> %ld\n", parent_ident, ident);
 	
 	for (int i=0; i < tab->arity; i++)

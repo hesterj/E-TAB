@@ -136,23 +136,32 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		}
 		assert(active_tableau->label);
 		assert(active_tableau->master_set);
+		
+		#ifndef DNDEBUG
 		ClauseTableauAssertCheck(active_tableau);
+		#endif
+		
 		number_of_extensions = 0;
 		printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
 		//bool depth_exceeded = false;
-		
-		if (AllBranchesAreLocal(active_tableau))
-		{
-			printf("All %ld branches local!\n", active_tableau->open_branches->members);
+	
+		//~ if (AllBranchesAreLocal(active_tableau))
+		//~ {
+			//~ printf("All %ld branches local!\n", active_tableau->open_branches->members);
 			//~ ClauseTableauPrintDOTGraph(active_tableau);
 			//~ printf("DOT graph printed\n");
-			if (active_tableau->open_branches->members > 1)
-			{
-				AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master, extension_candidates);
-			}
-		}
+			//~ if (active_tableau->open_branches->members > 1)
+			//~ {
+				//~ AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master, extension_candidates);
+			//~ }
+		//~ }
 		
 		open_branch = active_tableau->open_branches->anchor->succ;
+		
+		if (open_branch->depth > 2)
+		{
+			AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, active_tableau->master);
+		}
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			//printf("Branch iter\n");
