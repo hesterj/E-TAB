@@ -14,7 +14,7 @@ int ECloseBranch(ProofState_p proofstate,
 	ClauseTableau_p node = branch;
 	assert(proofstate);
 	assert(proofcontrol);
-	long proc_limit = 1000;
+	long proc_limit = 500;
 	while (node)
 	{
 		//assert(node->set == NULL);
@@ -36,7 +36,7 @@ int ECloseBranch(ProofState_p proofstate,
 	//ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
 	//printf("\n");
 	
-	printf("# Number of branch axioms: %ld\n", branch_clauses->members);
+	fprintf(GlobalOut, "# Number of branch axioms: %ld\n", branch_clauses->members);
 	ClauseSetSetProp(branch_clauses, CPInitial);
 	ClauseSetSetProp(branch_clauses, CPLimitedRW);
 	
@@ -50,7 +50,7 @@ int ECloseBranch(ProofState_p proofstate,
 							 LLONG_MAX, LONG_MAX);
 	if (success)
 	{
-		printf("Superposition contradiction purely within branch!\n");
+		fprintf(GlobalOut, "Superposition contradiction purely within branch!\n");
 		return PROOF_FOUND;
 	}
 	assert(proofstate->unprocessed->members == 0);
@@ -68,7 +68,7 @@ int ECloseBranch(ProofState_p proofstate,
 	
 	ClauseSetFree(branch_clauses);
 	// Now do normal saturation
-	printf("# Saturating branch...\n");
+	fprintf(GlobalOut, "# Saturating branch...\n");
 	success = Saturate(proofstate, proofcontrol, LONG_MAX,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
@@ -76,7 +76,7 @@ int ECloseBranch(ProofState_p proofstate,
 	//~ printf("# Exited saturation...\n");
 	if (success)
 	{
-		printf("Saturate returned empty clause.\n");
+		fprintf(GlobalOut, "Saturate returned empty clause.\n");
 		//ProofStateStatisticsPrint(GlobalOut, proofstate);
 		return PROOF_FOUND;
 	}
@@ -114,19 +114,25 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 	{
 		if (branches[i] == NULL) // If the branch is not local, do not fork.
 		{
-			pool[i] = NULL;
+			pool[i] = -1;
 			return_status[i] = RESOURCE_OUT;
 			continue;
 		}
 		fflush(GlobalOut);
+		//double preforktime = GetTotalCPUTime();
+		//printf("Prefork time: %f\n", preforktime);
 		worker = fork();
 		if (worker == 0) // We are in the child process 
 		{
 			// Collect the branch clauses
+			//double current_time = GetTotalCPUTime();
+			//printf("Fork creation time: %f elapsed since\n", current_time);
 			ClauseTableau_p branch = branches[i];
 			assert(branches[i]);
 			SilentTimeOut = true;
 			int branch_status = ECloseBranch(proofstate, proofcontrol, branch);
+			//double total_fork_time = GetTotalCPUTime() - current_time;
+			//printf("Total fork time: %f\n", total_fork_time);
 			exit(branch_status);
 		}
 		else 
@@ -149,7 +155,7 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 				//~ continue;
 			//~ }
 			worker = pool[i];
-			if (worker == 0) break;
+			if (worker == -1) break;
 			assert(branches[i]);
 			respid = waitpid(worker, &raw_status, 0);
 			//printf("Fork %d dead, respid %d, status %d.\n", worker, respid, raw_status);
@@ -158,20 +164,20 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
             status = WEXITSTATUS(raw_status);
             if (status == SATISFIABLE)
             {
-					printf("Satisfiable branch!\n");
+					fprintf(GlobalOut, "Satisfiable branch!\n");
 					return_status[i] = SATISFIABLE;
 					break;
 				}
             if (status == PROOF_FOUND)
             {
-					printf("Proof found on branch!\n");
+					assert(respid);
+					fprintf(GlobalOut, "Proof found on branch %d.\n", i);
 					ClauseTableau_p closed_branch = branches[i];
 					TableauSetExtractEntry(closed_branch);
 					closed_branch->open = false;
 					closed_branch->saturation_closed = true;
 					return_status[i] = PROOF_FOUND;
 					successful_count++;
-					printf("Branch marked as closed.\n");
 					break;
             }
             else
@@ -196,8 +202,8 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 	if (successful_count == num_open_branches)
 	{
 		all_successful = true;
-		printf("# All remaining open branches were closed with E.\n");
-		printf("# SZS status Theorem\n");
+		fprintf(GlobalOut, "# All remaining open branches were closed with E.\n");
+		fprintf(GlobalOut, "# SZS status Theorem\n");
 		ClauseTableauPrintDOTGraph(master);
 		exit(0);
 	}

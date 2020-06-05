@@ -156,7 +156,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			{
 				assert(active_tableau);
 				assert(active_tableau->open_branches->members > 0);
-				active_tableau = active_tableau->open_branches->anchor->succ; 
+				open_branch = active_tableau->open_branches->anchor->succ;
 			}
 		}
 		
@@ -490,6 +490,12 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 	// tableaux are already at the max depth.  
 	for (int current_depth = 1; current_depth < max_depth; current_depth++)
 	{
+		assert(proofstate);
+		assert(proofcontrol);
+		assert(distinct_tableaux);
+		assert(extension_candidates);
+		assert(current_depth);
+		assert(new_tableaux);
 		resulting_tab = ConnectionTableauProofSearch(proofstate, proofcontrol, distinct_tableaux, // This is where the magic happens
 													 extension_candidates, 
 													 current_depth,

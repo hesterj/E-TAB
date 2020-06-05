@@ -41,7 +41,7 @@ typedef struct clausetableau
 	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.
 	
 	// Tableau set cell stuff...
-	struct tableau_set_cell* set; // the set of 
+	struct tableau_set_cell* set; // if this node is in a set, it is the set of open branches 
 	struct tableau_set_cell* master_set;  // For controlling sets of distinct tableau
 	struct tableau_set_cell* open_branches; // the open branches that should be operated on
 	

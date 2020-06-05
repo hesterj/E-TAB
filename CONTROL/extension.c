@@ -334,7 +334,8 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch_label))) // stricter extension step
 		{
 			printf("\033[1;31m");
-			printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
+			//printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
+			printf("#");
 			printf("\033[0m");
 			//~ if (subst)
 			//~ {
