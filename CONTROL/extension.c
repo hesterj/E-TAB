@@ -163,8 +163,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	
 	ClauseTableau_p parent = tableau_copy->active_branch;
 	tableau_copy->active_branch = NULL; // We have the handle where we are working, so set this to NULL to indicate this.
-	//if (extension->selected->ident >= 0) parent->id = extension->selected->ident;
-	//else parent->id = extension->selected->ident - LONG_MIN;
 	
 	parent->id = ClauseGetIdent(extension->selected);
 	
@@ -224,11 +222,8 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 		SubstDelete(extension->subst);
 		return NULL;
 	}
-	else
+	else // the extension is regular- add it to the new tabeleax to be processed later
 	{
-		//TableauMasterSetInsert(distinct_tableaux, parent->master);
-		//~ printf("Printing tableau graph resulting from the extension.\n");
-		//~ ClauseTableauPrintDOTGraph(parent->master);
 		PStackPushP(new_tableaux, parent->master);
 	}
 	
@@ -252,7 +247,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 	if (ClauseTableauMarkClosedNodes(parent))
 	{
 		FoldUpCloseCycle(parent->master);
-		//printf("# Folded up %d nodes\n", folded_up);
 	}
 	
 	if (parent->open_branches->members == 0)
@@ -333,10 +327,10 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch_label))) // stricter extension step
 		{
-			printf("\033[1;31m");
+			//printf("\033[1;31m");
 			//printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
-			printf("#");
-			printf("\033[0m");
+			//printf("#");
+			//printf("\033[0m");
 			//~ if (subst)
 			//~ {
 				//~ printf("\n");SubstPrint(GlobalOut, subst, sig, DEREF_NEVER);printf("\n");
@@ -349,13 +343,13 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 																		   open_branch);
 			ClauseTableau_p maybe_extended = ClauseTableauExtensionRule(distinct_tableaux, extension_candidate, new_tableaux);
 			TableauExtensionFree(extension_candidate);
-			if (maybe_extended)
+			if (maybe_extended) // extension may not happen due to regularity
 			{
 				//printf("# Extension completed.\n");
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{
-					printf("# Closed tableau found!\n");
+					fprintf(GlobalOut, "# Closed tableau found!\n");
 					control->closed_tableau = maybe_extended->master;
 					ClauseSetFree(new_leaf_clauses);
 					return extensions_done;

@@ -36,6 +36,8 @@ typedef struct clausetableau
 	DStr_p info;
 	PStack_p local_variables; // The variables of the tableau that are local to the branch.
 	
+	//PStack_p spawned_tableaux
+	
 	Clause_p label;
 	ClauseSet_p unit_axioms; // Only present at the master node
 	ClauseSet_p folding_labels; // These are clauses that have been folded up to this node.

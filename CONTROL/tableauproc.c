@@ -113,24 +113,24 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
 		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
-		printf("# %ld active tableaux\n", distinct_tableaux->members);
+		//printf("# %ld active tableaux\n", distinct_tableaux->members);
 		assert(active_tableau->master_pred == distinct_tableaux->anchor);
 		if (control->closed_tableau)
 		{
-			printf("# Success, closed tableau found.\n");
+			fprintf(GlobalOut, "# Success, closed tableau found.\n");
 			ClauseTableauPrintDOTGraph(control->closed_tableau);
 			exit(0);
 		}
 		else if (distinct_tableaux->members == 1)
 		{
-			printf("# The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
+			fprintf(GlobalOut, "# The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
 			assert(distinct_tableaux->anchor->master_succ);
 			//ClauseTableauPrint(distinct_tableaux->anchor->master_succ);
 		}
 		if (active_tableau->open_branches->members == 0)
 		{
 			bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
-			printf("# Closed tableau found! %d\n", all_branches_closed);
+			fprintf(GlobalOut, "# Closed tableau found! %d\n", all_branches_closed);
 			ClauseTableauPrint(active_tableau);
 			return active_tableau;
 		}
@@ -142,7 +142,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		#endif
 		
 		number_of_extensions = 0;
-		printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
+		//printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
 		//bool depth_exceeded = false;
 		
 		open_branch = active_tableau->open_branches->anchor->succ;
@@ -160,6 +160,8 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			}
 		}
 		
+		//PStack_p tab_tmp_store = PStackAlloc();
+		
 		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
 		{
 			//printf("Branch iter\n");
@@ -167,14 +169,14 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			{
 				//depth_exceeded = true;
 				open_branch = open_branch->succ;
-				printf("# Max depth exceeded on branch\n");
+				//printf("# Max depth exceeded on branch\n");
 				continue;
 			}
 			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
 			//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
 			if (fold_close_cycle_test > 0)
 			{
-				printf("# Branches closed, resetting to first open branch.\n");
+				//printf("# Branches closed, resetting to first open branch.\n");
 				open_branch = active_tableau->open_branches->anchor->succ;
 			}
 			else if (fold_close_cycle_test == 0)
@@ -183,14 +185,14 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			}			
 			else
 			{
-				printf("# Closed tableau found in fold-close cycle.\n");
+				//printf("# Closed tableau found in fold-close cycle.\n");
 				assert(active_tableau->open_branches->members == 0);
 				bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
-				printf("# Closed tableau found! %d\n", all_branches_closed);
+				fprintf(GlobalOut, "# Closed tableau found! %d\n", all_branches_closed);
 				ClauseTableauPrint(active_tableau);
 				return active_tableau;
 			}
-			
+
 			number_of_extensions = 0;
 			Clause_p selected = extension_candidates->anchor->succ;
 			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
@@ -200,12 +202,12 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 																										open_branch,
 																										distinct_tableaux,
 																										selected,
-																										new_tableaux);
-				//printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
+																										tab_tmp_store);
+				printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
 				if (control->closed_tableau)
 				{
 					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
-					printf("# Closed tableau... %d\n", all_branches_closed);
+					fprintf(GlobalOut, "# Closed tableau... %d\n", all_branches_closed);
 					ClauseTableauPrint(control->closed_tableau);
 					return control->closed_tableau;
 				}
@@ -218,8 +220,25 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
 			if (number_of_extensions > 0)
 			{
-				//printf("Did %d extensions.\n", number_of_extensions);
+				//~ PStackPushStack(new_tableaux, tab_tmp_store);
+				//~ PStackFree(tab_tmp_store);
 				goto next_tableau;
+			}
+			//~ }
+			//~ else if (number_of_extensions == 0)
+			//~ {
+				//~ while (!PStackEmpty(tab_tmp_store))
+				//~ {
+					//~ ClauseTableau_p trash = PStackPopP(tab_tmp_store);
+					//~ TableauMasterSetExtractEntry(trash);
+					//~ ClauseTableauFree(trash);
+				//~ }
+				//~ PStackFree(tab_tmp_store);
+				//~ fprintf(GlobalOut, "Unable to extend a branch with any candidate.\n");
+			//~ }
+			else 
+			{
+				Error("Extension error.", 1);
 			}
 			open_branch = open_branch->succ;
 		}
@@ -505,7 +524,7 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 		printf("# Increasing maximum depth to %d\n", current_depth + 1);
 		if (resulting_tab)
 		{
-			ClauseTableauPrintDOTGraph(resulting_tab);
+			//ClauseTableauPrintDOTGraph(resulting_tab);
 			printf("Closed tableau found!\n");
 			break;
 		}
