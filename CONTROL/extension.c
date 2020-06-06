@@ -288,6 +288,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 															 PStack_p new_tableaux)
 {
 	int extensions_done = 0;
+	int subst_completed = 0;
 	//Sig_p sig = open_branch->master->terms->sig;
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
 	/*
@@ -335,6 +336,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			//~ {
 				//~ printf("\n");SubstPrint(GlobalOut, subst, sig, DEREF_NEVER);printf("\n");
 			//~ }
+			subst_completed++;
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
 																		   subst, 
