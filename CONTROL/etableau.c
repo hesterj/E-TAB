@@ -73,7 +73,7 @@ int ECloseBranch(ProofState_p proofstate,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
 	//ClauseSetFree(branch_clauses);
-	//~ printf("# Exited saturation...\n");
+	//printf("# Exited saturation...\n");
 	if (success)
 	{
 		fprintf(GlobalOut, "Saturate returned empty clause.\n");
@@ -142,7 +142,6 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 		}
 	}
 	//printf("# Waiting...\n");
-	bool all_successful = false;
 	int successful_count = 0;
 	for (int i=0; i<num_open_branches; i++)
 	{
@@ -201,7 +200,6 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 	
 	if (successful_count == num_open_branches)
 	{
-		all_successful = true;
 		fprintf(GlobalOut, "# All remaining open branches were closed with E.\n");
 		fprintf(GlobalOut, "# SZS status Theorem\n");
 		ClauseTableauPrintDOTGraph(master);

@@ -21,6 +21,7 @@ long move_new_tableaux_to_distinct(TableauSet_p distinct_tableaux, PStack_p new_
 	while (!PStackEmpty(new_tableaux))
 	{
 		ClauseTableau_p new_tab = PStackPopP(new_tableaux);
+		//printf("moving %p\n", new_tab);
 		assert(new_tab->master_set == NULL);
 		assert(new_tab->set == NULL);
 		TableauMasterSetInsert(distinct_tableaux, new_tab);
@@ -95,13 +96,15 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 	return NULL;
 }
 
-ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofControl_p proofcontrol, TableauSet_p distinct_tableaux,
+ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, 
+											  ProofControl_p proofcontrol, 
+											  TableauSet_p distinct_tableaux,
 										     ClauseSet_p extension_candidates,
 										     int max_depth,
 										     PStack_p new_tableaux)
 {
 	assert(distinct_tableaux);
-	ClauseTableau_p active_tableau = NULL;
+	ClauseTableau_p active_tableau = distinct_tableaux->anchor->master_succ;
 	ClauseTableau_p open_branch = NULL;
 	assert(distinct_tableaux->anchor->master_succ);
 	
@@ -109,7 +112,6 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 	TableauControl_p control = TableauControlAlloc();
 	long MAX_TABLEAUX = 8000000;
 	
-	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
 		assert(active_tableau->master_pred == distinct_tableaux->anchor);
@@ -130,14 +132,13 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			ClauseTableauPrintDOTGraph(control->closed_tableau);
 			return active_tableau;
 		}
-		
-		open_branch = active_tableau->open_branches->anchor->succ;
-		
+		//printf("Saturating branches...\n");
 		int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
 																					 proofcontrol, 
 																					 active_tableau->master);
 		
 		PStack_p tmp_new_tableaux = PStackAlloc();
+		//printf("Attempting extensions...\n");
 		ClauseTableau_p closed_tableau = ConnectionCalculusExtendOpenBranches(active_tableau, 
 																					   new_tableaux, 
 																					   control,
@@ -151,8 +152,11 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			return closed_tableau;
 		}
 		PStackPushStack(new_tableaux, tmp_new_tableaux);
+		TableauMasterSetExtractEntry(active_tableau);
+		ClauseTableauFree(active_tableau);
 		PStackFree(tmp_new_tableaux);
-		active_tableau = active_tableau->master_succ;
+		//printf("Moving to new tableau...\n");
+		active_tableau = distinct_tableaux->anchor->master_succ;
 	}
 	return NULL;  // Went through all possible tableaux... failure
 }
@@ -268,6 +272,7 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 													 extension_candidates, 
 													 current_depth,
 													 new_tableaux);
+		printf("# Moving %ld tableaux to active set...\n", PStackGetSP(new_tableaux));
 		long num_moved = move_new_tableaux_to_distinct(distinct_tableaux, new_tableaux);
 		if (num_moved == 0) printf("# No new tableaux???\n");
 		printf("# Increasing maximum depth to %d\n", current_depth + 1);
@@ -337,7 +342,7 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 			fprintf(GlobalOut, "# SZS status Theorem\n");
 			return active_tableau;
 		}
-
+		
 		Clause_p selected = extension_candidates->anchor->succ;
 		while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
 		{
@@ -363,12 +368,17 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 				fprintf(GlobalOut, "useless tab\n");
 				exit(1);
 			}
+			break;
 		}
-		// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
-		
-		PStackPushP(tab_trash, active_tableau);
-		PStackPushStack(new_tableaux, tab_tmp_store);
-		
+		else if (number_of_extensions > 0) // If we extended on the open branch with one or more clause, we need to move to a new active tableau.
+		{
+			PStackPushP(tab_trash, active_tableau);
+			PStackPushStack(new_tableaux, tab_tmp_store);
+		}
+		else 
+		{
+			Error("ConnectionCalculusExtendOpenBranches error.", 1);
+		}
 		open_branch = open_branch->succ;
 	}
 	return NULL;

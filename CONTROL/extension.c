@@ -300,8 +300,6 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 	Subst_p subst = NULL;
 	Clause_p leaf_clause = new_leaf_clauses->anchor->succ;
 	
-	assert(open_branch->master->master_set);
-	
 	Clause_p open_branch_label = open_branch->label;
 	long num_local_variables = UpdateLocalVariables(open_branch);
 	if (num_local_variables)
