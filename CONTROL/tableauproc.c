@@ -112,28 +112,7 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 	active_tableau = distinct_tableaux->anchor->master_succ;
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
 	{
-		//printf("# Number of distinct tableaux: %ld\n", distinct_tableaux->members);
-		//printf("# %ld active tableaux\n", distinct_tableaux->members);
 		assert(active_tableau->master_pred == distinct_tableaux->anchor);
-		if (control->closed_tableau)
-		{
-			fprintf(GlobalOut, "# Success, closed tableau found.\n");
-			ClauseTableauPrintDOTGraph(control->closed_tableau);
-			exit(0);
-		}
-		else if (distinct_tableaux->members == 1)
-		{
-			fprintf(GlobalOut, "# The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
-			assert(distinct_tableaux->anchor->master_succ);
-			//ClauseTableauPrint(distinct_tableaux->anchor->master_succ);
-		}
-		if (active_tableau->open_branches->members == 0)
-		{
-			bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
-			fprintf(GlobalOut, "# Closed tableau found! %d\n", all_branches_closed);
-			ClauseTableauPrint(active_tableau);
-			return active_tableau;
-		}
 		assert(active_tableau->label);
 		assert(active_tableau->master_set);
 		
@@ -142,8 +121,20 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 		#endif
 		
 		number_of_extensions = 0;
-		//printf("# There are %ld open branches remaining on active tableau.\n", active_tableau->open_branches->members);
-		//bool depth_exceeded = false;
+		
+		if (control->closed_tableau || active_tableau->open_branches->members == 0)
+		{
+			fprintf(GlobalOut, "# Success, closed tableau found.\n");
+			fprintf(GlobalOut, "# SZS status Theorem");
+			ClauseTableauPrintDOTGraph(control->closed_tableau);
+			return active_tableau;
+		}
+		else if (distinct_tableaux->members == 1)
+		{
+			fprintf(GlobalOut, "# The only tableau has %ld open branches.\n", distinct_tableaux->anchor->master_succ->open_branches->members);
+			assert(distinct_tableaux->anchor->master_succ);
+			//ClauseTableauPrint(distinct_tableaux->anchor->master_succ);
+		}
 		
 		open_branch = active_tableau->open_branches->anchor->succ;
 		
@@ -160,245 +151,25 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofContr
 			}
 		}
 		
-		//PStack_p tab_tmp_store = PStackAlloc();
-		
-		while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
+		PStack_p tmp_new_tableaux = PStackAlloc();
+		ClauseTableau_p closed_tableau = ConnectionCalculusExtendOpenBranches(active_tableau, 
+																					   new_tableaux, 
+																					   control,
+																					   distinct_tableaux,
+																					   extension_candidates,
+																					   max_depth);
+		if (closed_tableau)
 		{
-			//printf("Branch iter\n");
-			if (open_branch->depth > max_depth)
-			{
-				//depth_exceeded = true;
-				open_branch = open_branch->succ;
-				//printf("# Max depth exceeded on branch\n");
-				continue;
-			}
-			int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
-			//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
-			if (fold_close_cycle_test > 0)
-			{
-				//printf("# Branches closed, resetting to first open branch.\n");
-				open_branch = active_tableau->open_branches->anchor->succ;
-			}
-			else if (fold_close_cycle_test == 0)
-			{
-				//printf("No branches could be closed in fold-close cycle.\n");
-			}			
-			else
-			{
-				//printf("# Closed tableau found in fold-close cycle.\n");
-				assert(active_tableau->open_branches->members == 0);
-				bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
-				fprintf(GlobalOut, "# Closed tableau found! %d\n", all_branches_closed);
-				ClauseTableauPrint(active_tableau);
-				return active_tableau;
-			}
-
-			number_of_extensions = 0;
-			Clause_p selected = extension_candidates->anchor->succ;
-			while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
-			{
-				//printf("Ext candidate iter\n");
-				number_of_extensions += ClauseTableauExtensionRuleAttemptOnBranch(control,
-																										open_branch,
-																										distinct_tableaux,
-																										selected,
-																										tab_tmp_store);
-				printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
-				if (control->closed_tableau)
-				{
-					bool all_branches_closed = ClauseTableauMarkClosedNodes(control->closed_tableau);
-					fprintf(GlobalOut, "# Closed tableau... %d\n", all_branches_closed);
-					ClauseTableauPrint(control->closed_tableau);
-					return control->closed_tableau;
-				}
-				if (distinct_tableaux->members > MAX_TABLEAUX)
-				{
-					return NULL;
-				}
-				selected = selected->succ;
-			}
-			// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
-			if (number_of_extensions > 0)
-			{
-				//~ PStackPushStack(new_tableaux, tab_tmp_store);
-				//~ PStackFree(tab_tmp_store);
-				goto next_tableau;
-			}
-			//~ }
-			//~ else if (number_of_extensions == 0)
-			//~ {
-				//~ while (!PStackEmpty(tab_tmp_store))
-				//~ {
-					//~ ClauseTableau_p trash = PStackPopP(tab_tmp_store);
-					//~ TableauMasterSetExtractEntry(trash);
-					//~ ClauseTableauFree(trash);
-				//~ }
-				//~ PStackFree(tab_tmp_store);
-				//~ fprintf(GlobalOut, "Unable to extend a branch with any candidate.\n");
-			//~ }
-			else 
-			{
-				Error("Extension error.", 1);
-			}
-			open_branch = open_branch->succ;
+			fprintf(GlobalOut, "# Success, closed tableau found.\n");
+			fprintf(GlobalOut, "# SZS status Theorem");
+			return closed_tableau;
 		}
-		next_tableau:
-		//printf("New number of distinct tableaux: %ld\n", distinct_tableaux->members);
-		assert(active_tableau != active_tableau->master_succ);
+		PStackPushStack(new_tableaux, tmp_new_tableaux);
+		PStackFree(tmp_new_tableaux);
 		active_tableau = active_tableau->master_succ;
-		
-		ClauseTableau_p trash = active_tableau->master_pred;
-		TableauMasterSetExtractEntry(trash);
-		ClauseTableauFree(trash);
-		
-		////////
-		assert(active_tableau);
-		//printf("Old number of distinct tableaux: %ld, Now we have: %ld\n",old_number_of_distinct_tableaux, distinct_tableaux->members);
-		//old_number_of_distinct_tableaux = distinct_tableaux->members;
-		number_of_extensions = 0;
 	}
 	
-	//printf("# Went through all of the possible tableaux... %ld total. %d extensions done.\n", distinct_tableaux->members, number_of_extensions);
-	
-	//ClauseSetFree(extension_candidates);
-	return NULL;
-}
-
-/*  Create clausal connection tableau for the active clause set.
- *  If there is more than one, the start rule will be applied one at a time.
- *  After all the tableaux have been built up to the max depth (or MAX_TABLEAU has been exceeded),
- *  without success, the next start rule application is checked.  
- *  Opportunity for paralellism here, as all the start rule applications could be 
- *  done without too much duplication of the TB_p as would happen if every tableau
- *  had its own term bank.
-*/
-
-Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth) // BROKEN 04/24/20
-{
-	/*
-	printf("Clauses:\n");
-	ClauseSetPrint(GlobalOut, active, true);
-	printf("Terms %ld:\n", bank->term_store.entries);
-	TBPrintBankInOrder(GlobalOut, bank);
-	*/
-   problemType = PROBLEM_FO;
-   assert(max_depth);
-   if (active->members == 0) return NULL;
-   ClauseSet_p unit_axioms = ClauseSetAlloc();
-   ClauseSet_p extension_candidates = ClauseSetCopy(bank, active);
-   long number_of_units = ClauseSetMoveUnits(extension_candidates, unit_axioms);
-   printf("# Number of units: %ld Number of non-units: %ld Number of axioms: %ld\n", number_of_units,
-																										extension_candidates->members,
-																										active->members);
-   assert(number_of_units == unit_axioms->members);
-   if (extension_candidates->members == 0)
-   {
-		ClauseSetFree(unit_axioms);
-		ClauseSetFree(extension_candidates);
-		return NULL;
-	}
-   
-   ClauseTableau_p initial_tab = ClauseTableauAlloc();
-   ClauseTableau_p resulting_tab = NULL;
-   TableauSet_p starting_tableaux = TableauMasterSetAlloc();
-   
-   initial_tab->open_branches = TableauSetAlloc();
-   TableauSet_p open_branches = initial_tab->open_branches;
-   TableauSetInsert(open_branches, initial_tab);
-   
-   //ClauseSetPrint(GlobalOut, active, true);printf("\n");
-   
-   FunCode max_var = ClauseSetGetMaxVar(active);
-   assert(max_var <= 0);
-   
-   initial_tab->terms = bank;
-   initial_tab->signature = NULL;
-   initial_tab->state = NULL;
-   
-   //  Move all of the unit clauses to be on the initial tableau
-   initial_tab->unit_axioms = unit_axioms;
-   //ClauseSetGCMarkTerms(unit_axioms);
-   
-	ClauseTableau_p beginning_tableau = NULL;
-	// Create a tableau for each axiom using the start rule
-   Clause_p start_label = extension_candidates->anchor->succ;
-   while (start_label != extension_candidates->anchor)
-   {
-		beginning_tableau = ClauseTableauMasterCopy(initial_tab);
-		beginning_tableau->max_var = max_var;
-		TableauMasterSetInsert(starting_tableaux, beginning_tableau);
-		beginning_tableau = TableauStartRule(beginning_tableau, start_label);
-		start_label = start_label->succ;
-	}
-	
-	
-	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
-	
-	
-	printf("# Start rule applications: %ld\n", starting_tableaux->members);
-	
-	TableauSet_p distinct_tableaux = NULL;
-	restart:
-	VarBankPushEnv(bank->vars);
-	
-	distinct_tableaux = TableauMasterSetAlloc();
-	assert(distinct_tableaux);
-	assert(extension_candidates->anchor->succ);
-	beginning_tableau = TableauMasterSetExtractFirst(starting_tableaux);
-	TableauMasterSetInsert(distinct_tableaux, beginning_tableau);
-	assert(distinct_tableaux->members == 1);
-	for (int current_depth = 1; current_depth < max_depth; current_depth++)
-	{
-		printf("Serial search disabled.\n");
-		exit(0);
-		//~ resulting_tab = ConnectionTableauProofSearch(distinct_tableaux, // This is where the magic happens
-													 //~ extension_candidates, 
-													 //~ current_depth, NULL);
-		if (resulting_tab)
-		{
-			printf("Closed tableau found!\n");
-			break;
-		}
-	}
-	if (!resulting_tab)
-	{
-		TableauMasterSetFree(distinct_tableaux);
-		distinct_tableaux = NULL;
-		if (starting_tableaux->members > 0)
-		{
-			VarBankPopEnv(bank->vars);
-			//long freed = TBGCSweep(bank);
-			//ClauseSetGCMarkTerms(extension_candidates);
-			//ClauseSetGCMarkTerms(unit_axioms);
-			//printf("Number of terms recovered: %ld\n", freed);
-			goto restart;
-		}
-	}
-	
-	ClauseSetFree(extension_candidates);
-   
-   printf("# Connection tableau proof search finished.\n");
-
-   if (distinct_tableaux)
-   {
-		TableauMasterSetFree(distinct_tableaux);
-	}
-   if (!resulting_tab)
-   {
-	  printf("# ConnectionTableauProofSearch returns NULL. Failure.\n");
-	  return NULL;
-   }
-   if (resulting_tab)
-   {
-		printf("Proof search tableau success!\n");
-		Clause_p empty = EmptyClauseAlloc();
-		return empty;
-	}
-	return NULL;
-}
-
-Clause_p ConnectionTableauDepthFirst(TB_p bank, ClauseSet_p active, int max_depth)
-{
+	// Went through all possible tableaux... failure
 	return NULL;
 }
 
@@ -408,12 +179,6 @@ Clause_p ConnectionTableauDepthFirst(TB_p bank, ClauseSet_p active, int max_dept
 
 Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcontrol, TB_p bank, ClauseSet_p active, int max_depth, int tableauequality)
 {
-	/*
-	printf("Clauses:\n");
-	ClauseSetPrint(GlobalOut, active, true);
-	printf("Terms %ld:\n", bank->term_store.entries);
-	TBPrintBankInOrder(GlobalOut, bank);
-	*/
    problemType = PROBLEM_FO;
    PList_p conjectures = PListAlloc();
    PList_p non_conjectures = PListAlloc();
@@ -525,7 +290,7 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 		if (resulting_tab)
 		{
 			//ClauseTableauPrintDOTGraph(resulting_tab);
-			printf("Closed tableau found!\n");
+			printf("Closed tableau found before increasing depth!\n");
 			break;
 		}
 	}
@@ -556,8 +321,73 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 	return NULL;
 }
 
-ClauseTableau_p ConnectionTableauPostSearch(TableauSet_p distinct_tableaux, int max_depth)
+ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tableau, PStack_p new_tableaux,
+																							TableauControl_p control,
+																							TableauSet_p distinct_tableaux,
+																							ClauseSet_p extension_candidates,
+																							int max_depth)
 {
-	//ClauseTableau_p handle = distinct_tableaux->anchor->master_succ;
+	PStack_p tab_tmp_store = PStackAlloc();
+	PStack_p tab_trash = PStackAlloc();
+	int number_of_extensions = 0;
+	
+	ClauseTableau_p open_branch = active_tableau->open_branches->anchor->succ;
+	while (open_branch != active_tableau->open_branches->anchor) // iterate over the open branches of the current tableau
+	{
+		//printf("Branch iter\n");
+		if (open_branch->depth > max_depth)
+		{
+			//depth_exceeded = true;
+			open_branch = open_branch->succ;
+			//printf("# Max depth exceeded on branch\n");
+			continue;
+		}
+		int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
+		//printf("Foldup close cycle: %d\n", fold_close_cycle_test);
+		if (fold_close_cycle_test > 0)
+		{
+			//printf("# Branches closed, resetting to first open branch.\n");
+			open_branch = active_tableau->open_branches->anchor->succ;
+		}
+		else if (fold_close_cycle_test == 0);
+		else
+		{
+			//printf("# Closed tableau found in fold-close cycle.\n");
+			assert(active_tableau->open_branches->members == 0);
+			bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
+			fprintf(GlobalOut, "# SZS status Theorem\n");
+			return active_tableau;
+		}
+
+		Clause_p selected = extension_candidates->anchor->succ;
+		while (selected != extension_candidates->anchor) // iterate over the clauses we can split on the branch
+		{
+			//printf("Ext candidate iter\n");
+			int branch_extensions = 0;
+			branch_extensions += ClauseTableauExtensionRuleAttemptOnBranch(control,
+																									open_branch,
+																									distinct_tableaux,
+																									selected,
+																									tab_tmp_store);
+			number_of_extensions += branch_extensions;
+			//printf("# Did %d extensions on open branch of depth %d\n", number_of_extensions, open_branch->depth);
+			if (control->closed_tableau)
+			{
+				fprintf(GlobalOut, "# SZS status Theorem\n");
+				return control->closed_tableau;
+			}
+			if (branch_extensions == 0)
+			{
+				printf("Failed to extend on a branch, should clear tab_tmp_store and move to new tableau.\n");
+				break;
+			}
+			selected = selected->succ;
+		}
+		// If we extended on the open branch with one or more clause, we need to move to a new active tableau.
+		
+		PStackPushStack(new_tableaux, tab_tmp_store);
+		
+		open_branch = open_branch->succ;
+	}
 	return NULL;
 }

@@ -561,8 +561,7 @@ int main(int argc, char* argv[])
 		}
 		else if (TableauBatch == 0)
 		{
-			printf("# Tableau serial search.\n");
-			success = ConnectionTableauSerial(proofstate->terms, new_axioms, TableauDepth);
+			printf("# Tableau serial search not allowed.\n");
 		}
 		else
 		{

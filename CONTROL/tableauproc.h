@@ -8,19 +8,23 @@
 WFormula_p ProofStateGetConjecture(ProofState_p state);
 
 bool TFormulasShareVariables(Sig_p sig, TFormula_p a, TFormula_p b);
-
-Clause_p ConnectionTableauDepthFirst(TB_p bank, ClauseSet_p active, int max_depth);
-Clause_p ConnectionTableauSerial(TB_p bank, ClauseSet_p active, int max_depth);
-Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcontrol, TB_p bank, ClauseSet_p active, int max_depth, int tableauequality);
-Clause_p ConnectionTableauParallel(TB_p bank, ClauseSet_p active, int max_depth);
-ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, ProofControl_p proofcontrol, TableauSet_p distinct_tableaux,
-										     ClauseSet_p extension_candidates,
-										     int max_depth,
-										     PStack_p new_tableaux);
-															
-ClauseTableau_p ConnectionTableauPostSearch(TableauSet_p distinct_tableaux, int max_depth);
-														
 long ClauseSetMoveUnits(ClauseSet_p set, ClauseSet_p units);
+
+Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcontrol, 
+																			TB_p bank, ClauseSet_p active, 
+																			int max_depth, 
+																			int tableauequality);
+ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, 
+															ProofControl_p proofcontrol, 
+															TableauSet_p distinct_tableaux,
+															ClauseSet_p extension_candidates,
+															int max_depth,
+															PStack_p new_tableaux);
+ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tableau, PStack_p new_tableaux,
+																							TableauControl_p control,
+																							TableauSet_p distinct_tableaux,
+																							ClauseSet_p extension_candidates,
+																							int max_depth);
     
 
 #endif
