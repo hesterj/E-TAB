@@ -21,7 +21,11 @@ long move_new_tableaux_to_distinct(TableauSet_p distinct_tableaux, PStack_p new_
 	while (!PStackEmpty(new_tableaux))
 	{
 		ClauseTableau_p new_tab = PStackPopP(new_tableaux);
-		//printf("moving %p\n", new_tab);
+		//~ printf("moving %p\n", new_tab);
+		//~ if (new_tab->master_set == distinct_tableaux)
+		//~ {
+			//~ printf("This tab is already part of distinct tableaux...\n");
+		//~ }
 		assert(new_tab->master_set == NULL);
 		assert(new_tab->set == NULL);
 		TableauMasterSetInsert(distinct_tableaux, new_tab);
@@ -94,76 +98,6 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 		handle = handle->succ;
 	}
 	return NULL;
-}
-
-ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, 
-											  ProofControl_p proofcontrol, 
-											  TableauSet_p distinct_tableaux,
-										     ClauseSet_p extension_candidates,
-										     int max_depth,
-										     PStack_p new_tableaux)
-{
-	assert(distinct_tableaux);
-	ClauseTableau_p active_tableau = distinct_tableaux->anchor->master_succ;
-	ClauseTableau_p open_branch = NULL;
-	assert(distinct_tableaux->anchor->master_succ);
-	
-	int number_of_extensions = 0;
-	TableauControl_p control = TableauControlAlloc();
-	long MAX_TABLEAUX = 8000000;
-	
-	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
-	{
-		assert(active_tableau->master_pred == distinct_tableaux->anchor);
-		assert(active_tableau->label);
-		assert(active_tableau->master_set);
-		assert(active_tableau->master == active_tableau);
-		
-		#ifndef DNDEBUG
-		ClauseTableauAssertCheck(active_tableau);
-		#endif
-		
-		number_of_extensions = 0;
-		
-		if (control->closed_tableau || active_tableau->open_branches->members == 0)
-		{
-			fprintf(GlobalOut, "# Success, closed tableau found.\n");
-			fprintf(GlobalOut, "# SZS status Theorem");
-			ClauseTableauPrintDOTGraph(control->closed_tableau);
-			return active_tableau;
-		}
-		//printf("Saturating branches...\n");
-		//~ int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
-																					 //~ proofcontrol, 
-																					 //~ active_tableau->master);
-		
-		PStack_p tmp_new_tableaux = PStackAlloc();
-		//printf("Attempting extensions...\n");
-		ClauseTableau_p closed_tableau = ConnectionCalculusExtendOpenBranches(active_tableau, 
-																					   new_tableaux, 
-																					   control,
-																					   distinct_tableaux,
-																					   extension_candidates,
-																					   max_depth);
-		if (closed_tableau)
-		{
-			fprintf(GlobalOut, "# Success, closed tableau found.\n");
-			fprintf(GlobalOut, "# SZS status Theorem\n");
-			return closed_tableau;
-		}
-		TableauMasterSetExtractEntry(active_tableau);
-		ClauseTableauFree(active_tableau);
-		for (PStackPointer p=0; p<PStackGetSP(tmp_new_tableaux); p++)
-		{
-			printf("trying to close open branches...\n");
-			AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, PStackElementP(tmp_new_tableaux, p));
-		}
-		//PStackPushStack(new_tableaux, tmp_new_tableaux);
-		PStackFree(tmp_new_tableaux);
-		//printf("Moving to new tableau...\n");
-		active_tableau = distinct_tableaux->anchor->master_succ;
-	}
-	return NULL;  // Went through all possible tableaux... failure
 }
 
 /*  As ConnectionTableauSerial, but builds tableau on all start rule
@@ -315,6 +249,63 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 	return NULL;
 }
 
+ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate, 
+											  ProofControl_p proofcontrol, 
+											  TableauSet_p distinct_tableaux,
+										     ClauseSet_p extension_candidates,
+										     int max_depth,
+										     PStack_p new_tableaux)
+{
+	assert(distinct_tableaux);
+	ClauseTableau_p active_tableau = distinct_tableaux->anchor->master_succ;
+	ClauseTableau_p open_branch = NULL;
+	assert(distinct_tableaux->anchor->master_succ);
+	TableauControl_p control = TableauControlAlloc();
+	
+	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
+	{
+		assert(active_tableau->master_pred == distinct_tableaux->anchor);
+		assert(active_tableau->label);
+		assert(active_tableau->master_set);
+		assert(active_tableau->master == active_tableau);
+		
+		#ifndef DNDEBUG
+		ClauseTableauAssertCheck(active_tableau);
+		#endif
+		
+		if (control->closed_tableau || active_tableau->open_branches->members == 0)
+		{
+			fprintf(GlobalOut, "# Success, closed tableau found.\n");
+			//fprintf(GlobalOut, "# SZS status Theorem");
+			//ClauseTableauPrintDOTGraph(control->closed_tableau);
+			return active_tableau;
+		}
+		//printf("Saturating branches...\n");
+		//~ int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
+																					 //~ proofcontrol, 
+																					 //~ active_tableau->master);
+		//printf("Attempting extensions...\n");
+		ClauseTableau_p closed_tableau = ConnectionCalculusExtendOpenBranches(active_tableau, 
+																					   new_tableaux, 
+																					   control,
+																					   distinct_tableaux,
+																					   extension_candidates,
+																					   max_depth);
+		if (closed_tableau)
+		{
+			//fprintf(GlobalOut, "# Success, closed tableau found.\n");
+			//fprintf(GlobalOut, "# SZS status Theorem\n");
+			return closed_tableau;
+		}
+		TableauMasterSetExtractEntry(active_tableau);
+		ClauseTableauFree(active_tableau);
+		printf("Moving to new tableau...\n");
+		active_tableau = distinct_tableaux->anchor->master_succ;
+	}
+	printf("Increasing depth or giving up... %ld distinct tableau remaining\n", distinct_tableaux->members);
+	return NULL;  // Went through all possible tableaux... failure
+}
+
 ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tableau, PStack_p new_tableaux,
 																							TableauControl_p control,
 																							TableauSet_p distinct_tableaux,
@@ -379,8 +370,9 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		else if (number_of_extensions > 0) // If we extended on the open branch with one or more clause, we need to move to a new active tableau.
 		{
 			PStackPushP(tab_trash, active_tableau);
+			printf("%ld tab_tmp_store moved to new tableaux...\n", PStackGetSP(tab_tmp_store));
 			PStackPushStack(new_tableaux, tab_tmp_store);
-			printf("%ld temporary tableaux...\n", PStackGetSP(tab_tmp_store));
+			break;
 		}
 		else 
 		{
@@ -388,6 +380,8 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		}
 		open_branch = open_branch->succ;
 	}
-	printf("Moving to new active tableau\n");
+	PStackFree(tab_trash);
+	PStackFree(tab_tmp_store);
+	printf("Leaving open branches closure\n");
 	return NULL;
 }

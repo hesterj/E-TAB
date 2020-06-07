@@ -191,6 +191,8 @@ Clause_p ReplaceLocalVariablesWithFresh(ClauseTableau_p master, Clause_p clause,
 	for (PStackPointer p = 0; p < PStackGetSP(local_variables); p++)
 	{
 		Term_p old_var = PStackElementP(local_variables, p);
+		assert(old_var);
+		assert(old_var->f_code < 0);
 		master->max_var -= 2;
 		Term_p fresh_var = VarBankVarAssertAlloc(variable_bank, master->max_var, old_var->type);
 		assert(old_var != fresh_var);

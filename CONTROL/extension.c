@@ -137,12 +137,14 @@ bool ClauseTableauExtensionIsRegular(ClauseTableau_p branch, Clause_p clause)
  *  This method is only called by ClauseTableauExtensionRuleAttempt.  If this method is called there is likely a Subst_p active!
  * 
  *  Does not modify the old tableau!  A copy of it is made, which is then extended.
- *  This is because we may need the old unmodified tableau for other extension steps,
+f *  This is because we may need the old unmodified tableau for other extension steps,
  *  or undo the work if the extension is irregular.  Irregular extensions are 
  *  detected after the work is done.
 */
 
-ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, TableauExtension_p extension, PStack_p new_tableaux)
+ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, 
+														 TableauExtension_p extension, 
+														 PStack_p new_tableaux)
 {
 	// Create a copy of the master tableau of the extension rule's tableau.
 	// Insert the newly created master tableau in to the distinct_tableaux. 
@@ -241,6 +243,10 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux, Table
 			}
 		}
 	}
+	// We have tried to close the remaining branches with closure rule- try superposition
+	assert(parent->master->state);
+	assert(parent->master->control);
+	//int num_closed_with_superposition = AttemptToCloseBranchesWithSuperposition(
 	
 	// Try to fold up since we have done extension/cosure steps
 	assert(parent->arity > 0);  // Since we did an extension step, there should be children
@@ -345,7 +351,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			TableauExtensionFree(extension_candidate);
 			if (maybe_extended) // extension may not happen due to regularity
 			{
-				//printf("# Extension completed.\n");
+				printf("# Extension completed.  There are %ld new_tableaux\n", PStackGetSP(new_tableaux));
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{

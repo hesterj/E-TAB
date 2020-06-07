@@ -1,8 +1,8 @@
 #ifndef EXTENSION
 #define EXTENSION
 
-#include <foldingup.h>
-
+//#include <foldingup.h>
+#include <etableau.h>
 /*  Storage type for potential extension steps to be done at a single node
  *  This is needed because there can be several extension steps to be done
 */

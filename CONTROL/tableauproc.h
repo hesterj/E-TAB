@@ -2,8 +2,8 @@
 
 #define TABLEAUSATURATE
 
-#include <etableau.h>
-//#include <extension.h>
+//#include <etableau.h>
+#include <extension.h>
 
 WFormula_p ProofStateGetConjecture(ProofState_p state);
 
