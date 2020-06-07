@@ -133,9 +133,9 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate,
 			return active_tableau;
 		}
 		//printf("Saturating branches...\n");
-		int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
-																					 proofcontrol, 
-																					 active_tableau->master);
+		//~ int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
+																					 //~ proofcontrol, 
+																					 //~ active_tableau->master);
 		
 		PStack_p tmp_new_tableaux = PStackAlloc();
 		//printf("Attempting extensions...\n");
@@ -151,9 +151,14 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate,
 			fprintf(GlobalOut, "# SZS status Theorem\n");
 			return closed_tableau;
 		}
-		PStackPushStack(new_tableaux, tmp_new_tableaux);
 		TableauMasterSetExtractEntry(active_tableau);
 		ClauseTableauFree(active_tableau);
+		for (PStackPointer p=0; p<PStackGetSP(tmp_new_tableaux); p++)
+		{
+			printf("trying to close open branches...\n");
+			AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, PStackElementP(tmp_new_tableaux, p));
+		}
+		//PStackPushStack(new_tableaux, tmp_new_tableaux);
 		PStackFree(tmp_new_tableaux);
 		//printf("Moving to new tableau...\n");
 		active_tableau = distinct_tableaux->anchor->master_succ;
@@ -361,6 +366,7 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		if (number_of_extensions == 0)
 		{
 			long num_created = PStackGetSP(tab_tmp_store);
+			PStackPushP(tab_trash, active_tableau);
 			fprintf(GlobalOut, "Failed to extend an open branch with any clause.  Couldn't be closed with superposition.  This tableau is useless.\n");
 			fprintf(GlobalOut, "%ld useless tableaux?\n", num_created);
 			if (num_created > 0)
@@ -374,6 +380,7 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		{
 			PStackPushP(tab_trash, active_tableau);
 			PStackPushStack(new_tableaux, tab_tmp_store);
+			printf("%ld temporary tableaux...\n", PStackGetSP(tab_tmp_store));
 		}
 		else 
 		{
@@ -381,5 +388,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		}
 		open_branch = open_branch->succ;
 	}
+	printf("Moving to new active tableau\n");
 	return NULL;
 }
