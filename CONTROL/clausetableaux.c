@@ -31,6 +31,7 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->active_branch = NULL;
 	handle->pred = NULL;
 	handle->control = NULL;
+	handle->state = NULL;
 	handle->succ = NULL;
 	handle->master_pred = NULL;
 	handle->master_succ = NULL;
@@ -89,6 +90,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->open_branches = TableauSetAlloc();
 	handle->terms = tab->terms;
 	handle->control = tab->control;
+	handle->state = tab->state;
 	handle->local_variables = NULL;
 	
 	if (tab->label)
@@ -843,6 +845,8 @@ ClauseTableau_p TableauStartRule(ClauseTableau_p tab, Clause_p start)
 	assert(tab->master_set);
 	assert(start);
 	assert(tab->unit_axioms);
+	assert(tab->state);
+	assert(tab->control);
 	
 	arity = ClauseLiteralNumber(start);
 	tab->arity = arity;

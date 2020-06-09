@@ -106,6 +106,8 @@ WFormula_p ProofStateGetConjecture(ProofState_p state)
 
 Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcontrol, TB_p bank, ClauseSet_p active, int max_depth, int tableauequality)
 {
+	assert(proofstate);
+	assert(proofcontrol);
    problemType = PROBLEM_FO;
    PList_p conjectures = PListAlloc();
    PList_p non_conjectures = PListAlloc();
@@ -155,7 +157,8 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
    
    initial_tab->terms = bank;
    initial_tab->signature = NULL;
-   initial_tab->state = NULL;
+   initial_tab->state = proofstate;
+   initial_tab->control = proofcontrol;
    
    //  Move all of the unit clauses to be on the initial tableau
    initial_tab->unit_axioms = unit_axioms;
@@ -257,9 +260,9 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate,
 										     PStack_p new_tableaux)
 {
 	assert(distinct_tableaux);
+	assert(distinct_tableaux->anchor->master_succ);
 	ClauseTableau_p active_tableau = distinct_tableaux->anchor->master_succ;
 	ClauseTableau_p open_branch = NULL;
-	assert(distinct_tableaux->anchor->master_succ);
 	TableauControl_p control = TableauControlAlloc();
 	
 	while (active_tableau != distinct_tableaux->anchor) // iterate over the active tableaux
@@ -275,16 +278,9 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate,
 		
 		if (control->closed_tableau || active_tableau->open_branches->members == 0)
 		{
-			fprintf(GlobalOut, "# Success, closed tableau found.\n");
-			//fprintf(GlobalOut, "# SZS status Theorem");
-			//ClauseTableauPrintDOTGraph(control->closed_tableau);
 			return active_tableau;
 		}
-		//printf("Saturating branches...\n");
-		//~ int saturation_closed = AttemptToCloseBranchesWithSuperposition(proofstate, 
-																					 //~ proofcontrol, 
-																					 //~ active_tableau->master);
-		//printf("Attempting extensions...\n");
+		
 		ClauseTableau_p closed_tableau = ConnectionCalculusExtendOpenBranches(active_tableau, 
 																					   new_tableaux, 
 																					   control,
@@ -293,16 +289,12 @@ ClauseTableau_p ConnectionTableauProofSearch(ProofState_p proofstate,
 																					   max_depth);
 		if (closed_tableau)
 		{
-			//fprintf(GlobalOut, "# Success, closed tableau found.\n");
-			//fprintf(GlobalOut, "# SZS status Theorem\n");
 			return closed_tableau;
 		}
 		TableauMasterSetExtractEntry(active_tableau);
 		ClauseTableauFree(active_tableau);
-		printf("Moving to new tableau...\n");
 		active_tableau = distinct_tableaux->anchor->master_succ;
 	}
-	printf("Increasing depth or giving up... %ld distinct tableau remaining\n", distinct_tableaux->members);
 	return NULL;  // Went through all possible tableaux... failure
 }
 
@@ -358,8 +350,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		{
 			long num_created = PStackGetSP(tab_tmp_store);
 			PStackPushP(tab_trash, active_tableau);
-			fprintf(GlobalOut, "Failed to extend an open branch with any clause.  Couldn't be closed with superposition.  This tableau is useless.\n");
-			fprintf(GlobalOut, "%ld useless tableaux?\n", num_created);
 			if (num_created > 0)
 			{
 				fprintf(GlobalOut, "useless tab\n");

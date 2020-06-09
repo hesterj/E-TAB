@@ -243,10 +243,6 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 			}
 		}
 	}
-	// We have tried to close the remaining branches with closure rule- try superposition
-	assert(parent->master->state);
-	assert(parent->master->control);
-	//int num_closed_with_superposition = AttemptToCloseBranchesWithSuperposition(
 	
 	// Try to fold up since we have done extension/cosure steps
 	assert(parent->arity > 0);  // Since we did an extension step, there should be children
@@ -259,6 +255,13 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 	{
 		printf("# Closed tableau found?\n");
 	}
+	
+	// We have tried to close the remaining branches with closure rule- try superposition
+	assert(parent->master->state);
+	assert(parent->master->control);
+	ProofState_p proofstate = parent->master->state;
+	ProofControl_p proofcontrol = parent->master->control;
+	int num_closed_with_superposition = AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, parent->master);
 	
 	//printf("Open branches remaining: %ld\n", parent->open_branches->members);
 	//ClauseTableauPrint(parent->master);
@@ -295,13 +298,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 {
 	int extensions_done = 0;
 	int subst_completed = 0;
-	//Sig_p sig = open_branch->master->terms->sig;
 	ClauseSet_p new_leaf_clauses = SplitClauseFresh(open_branch->terms, open_branch->master, selected);
-	/*
-	printf("Splitting clause fresh: ");ClausePrint(GlobalOut, selected, true);
-	printf("\n");
-	printf("Fresh literals: ");ClauseSetPrint(GlobalOut, new_leaf_clauses, true);
-	*/
 	assert(new_leaf_clauses->members);
 	Subst_p subst = NULL;
 	Clause_p leaf_clause = new_leaf_clauses->anchor->succ;
@@ -324,22 +321,12 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 		assert(open_branch->arity == 0);
 		assert(leaf_clause);
 		assert(selected);
-		//assert(sig);
 		subst = NULL;
-		//printf("# Checking for possible extension step. %ld distinct tableaux total.\n", distinct_tableaux->members);
 		
 		// Here we are only doing the first possible extension- need to create a list of all of the extensions and do them...
 		// The subst, leaf_clause, new_leaf_clauses, will have to be reset, but the open_branch can remain the same since we have not affected it.
 		if ((subst = ClauseContradictsClause(open_branch, leaf_clause, open_branch_label))) // stricter extension step
 		{
-			//printf("\033[1;31m");
-			//printf("# Extension step possible! d%da%d\n", open_branch->depth, ClauseLiteralNumber(selected));
-			//printf("#");
-			//printf("\033[0m");
-			//~ if (subst)
-			//~ {
-				//~ printf("\n");SubstPrint(GlobalOut, subst, sig, DEREF_NEVER);printf("\n");
-			//~ }
 			subst_completed++;
 			Clause_p head_clause = leaf_clause;
 			TableauExtension_p extension_candidate = TableauExtensionAlloc(selected, 
@@ -351,7 +338,7 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 			TableauExtensionFree(extension_candidate);
 			if (maybe_extended) // extension may not happen due to regularity
 			{
-				printf("# Extension completed.  There are %ld new_tableaux\n", PStackGetSP(new_tableaux));
+				//printf("# Extension completed.  There are %ld new_tableaux\n", PStackGetSP(new_tableaux));
 				extensions_done++;
 				if (maybe_extended->open_branches->members == 0)
 				{
@@ -369,8 +356,6 @@ int ClauseTableauExtensionRuleAttemptOnBranch(TableauControl_p control,
 	{
 		ClauseFree(open_branch_label);
 	}
-	
-	//printf("Exiting ClauseTableauExtensionRuleAttemptOnBranch.\n");
 	
 	// Do not work here.  The tableau of open branch has been copied and worked on. 
 	// The current open branch is now "old" and will only be used for other extensions.
