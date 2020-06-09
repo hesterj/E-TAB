@@ -36,7 +36,7 @@ int ECloseBranch(ProofState_p proofstate,
 	//ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
 	//printf("\n");
 	
-	fprintf(GlobalOut, "# Number of branch axioms: %ld\n", branch_clauses->members);
+	//fprintf(GlobalOut, "# Number of branch axioms: %ld\n", branch_clauses->members);
 	ClauseSetSetProp(branch_clauses, CPInitial);
 	ClauseSetSetProp(branch_clauses, CPLimitedRW);
 	
@@ -46,7 +46,7 @@ int ECloseBranch(ProofState_p proofstate,
 	proofstate->unprocessed = ClauseSetAlloc();
 	ProofStateInit(proofstate, proofcontrol);
 	Clause_p success = Saturate(proofstate, proofcontrol, LONG_MAX,
-							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
+							 LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
 	if (success)
 	{
@@ -68,7 +68,7 @@ int ECloseBranch(ProofState_p proofstate,
 	
 	ClauseSetFree(branch_clauses);
 	// Now do normal saturation
-	fprintf(GlobalOut, "# Saturating branch...\n");
+	//fprintf(GlobalOut, "# Saturating branch...\n");
 	success = Saturate(proofstate, proofcontrol, LONG_MAX,
 							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
@@ -148,11 +148,6 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 		respid = -1;
 		while(respid == -1)
 		{
-			//~ if (branches[i] == NULL)
-			//~ {
-				//~ printf("Nonlocal branch\n");
-				//~ continue;
-			//~ }
 			worker = pool[i];
 			if (worker == -1) break;
 			assert(branches[i]);
@@ -163,8 +158,9 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
             status = WEXITSTATUS(raw_status);
             if (status == SATISFIABLE)
             {
-					fprintf(GlobalOut, "Satisfiable branch!\n");
 					return_status[i] = SATISFIABLE;
+					fprintf(GlobalOut, "# SZS Status Satisfiable");
+					exit(0);
 					break;
 				}
             if (status == PROOF_FOUND)

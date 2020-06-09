@@ -305,7 +305,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 																							int max_depth)
 {
 	PStack_p tab_tmp_store = PStackAlloc();
-	PStack_p tab_trash = PStackAlloc();
 	int number_of_extensions = 0;
 	
 	ClauseTableau_p open_branch = active_tableau->open_branches->anchor->succ;
@@ -315,20 +314,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		{
 			open_branch = open_branch->succ;
 			continue;
-		}
-		int fold_close_cycle_test = FoldUpCloseCycle(open_branch->master);
-		if (fold_close_cycle_test > 0)
-		{
-			open_branch = active_tableau->open_branches->anchor->succ;
-		}
-		else if (fold_close_cycle_test == 0);
-		else
-		{
-			//printf("# Closed tableau found in fold-close cycle.\n");
-			assert(active_tableau->open_branches->members == 0);
-			bool all_branches_closed = ClauseTableauMarkClosedNodes(active_tableau);
-			fprintf(GlobalOut, "# SZS status Theorem\n");
-			return active_tableau;
 		}
 		
 		Clause_p selected = extension_candidates->anchor->succ;
@@ -348,18 +333,16 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		}
 		if (number_of_extensions == 0)
 		{
-			long num_created = PStackGetSP(tab_tmp_store);
-			PStackPushP(tab_trash, active_tableau);
-			if (num_created > 0)
+			while (PStackGetSP(tab_tmp_store))
 			{
-				fprintf(GlobalOut, "useless tab\n");
-				exit(1);
+				fprintf(GlobalOut, "Unextendable branch... discarding tableaux\n");
+				ClauseTableau_p trash = PStackPopP(tab_tmp_store);
+				ClauseTableauFree(trash);
 			}
 			break;
 		}
 		else if (number_of_extensions > 0) // If we extended on the open branch with one or more clause, we need to move to a new active tableau.
 		{
-			PStackPushP(tab_trash, active_tableau);
 			printf("%ld tab_tmp_store moved to new tableaux...\n", PStackGetSP(tab_tmp_store));
 			PStackPushStack(new_tableaux, tab_tmp_store);
 			break;
@@ -370,7 +353,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		}
 		open_branch = open_branch->succ;
 	}
-	PStackFree(tab_trash);
 	PStackFree(tab_tmp_store);
 	printf("Leaving open branches closure\n");
 	return NULL;

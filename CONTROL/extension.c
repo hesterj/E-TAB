@@ -231,29 +231,13 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 	
 	// The work is done- try to close the remaining branches
 	SubstDelete(extension->subst);
-	for (long p = 0; p<number_of_children; p++)
-	{
-		ClauseTableau_p child = parent->children[p];
-		if (child->open)
-		{
-			if (ClauseTableauBranchClosureRuleWrapper(child))
-			{
-				TableauSetExtractEntry(child);
-				child->open = false;
-			}
-		}
-	}
 	
-	// Try to fold up since we have done extension/cosure steps
-	assert(parent->arity > 0);  // Since we did an extension step, there should be children
-	if (ClauseTableauMarkClosedNodes(parent))
-	{
-		FoldUpCloseCycle(parent->master);
-	}
+	int branches_closed = FoldUpCloseCycle(parent->master);
 	
 	if (parent->open_branches->members == 0)
 	{
 		printf("# Closed tableau found?\n");
+		exit(0);
 	}
 	
 	// We have tried to close the remaining branches with closure rule- try superposition
