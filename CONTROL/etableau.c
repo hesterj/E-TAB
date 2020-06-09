@@ -50,7 +50,7 @@ int ECloseBranch(ProofState_p proofstate,
 							 LLONG_MAX, LONG_MAX);
 	if (success)
 	{
-		fprintf(GlobalOut, "Superposition contradiction purely within branch!\n");
+		//fprintf(GlobalOut, "Superposition contradiction purely within branch!\n");
 		return PROOF_FOUND;
 	}
 	assert(proofstate->unprocessed->members == 0);
@@ -69,14 +69,14 @@ int ECloseBranch(ProofState_p proofstate,
 	ClauseSetFree(branch_clauses);
 	// Now do normal saturation
 	//fprintf(GlobalOut, "# Saturating branch...\n");
-	success = Saturate(proofstate, proofcontrol, LONG_MAX,
-							 proc_limit, LONG_MAX, LONG_MAX, LONG_MAX,
+	success = Saturate(proofstate, proofcontrol, 100,
+							 LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
 	//ClauseSetFree(branch_clauses);
 	//printf("# Exited saturation...\n");
 	if (success)
 	{
-		fprintf(GlobalOut, "Saturate returned empty clause.\n");
+		//fprintf(GlobalOut, "Saturate returned empty clause.\n");
 		//ProofStateStatisticsPrint(GlobalOut, proofstate);
 		return PROOF_FOUND;
 	}
@@ -142,6 +142,13 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 		}
 	}
 	//printf("# Waiting...\n");
+	Clause_p unsatisfiable = Saturate(proofstate, proofcontrol, 100,
+							 1000, LONG_MAX, LONG_MAX, LONG_MAX,
+							 LLONG_MAX, LONG_MAX);
+	if (unsatisfiable)
+	{
+		fprintf(GlobalOut, "# SZS status Theorem\n");
+	}
 	int successful_count = 0;
 	for (int i=0; i<num_open_branches; i++)
 	{
@@ -166,7 +173,7 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
             if (status == PROOF_FOUND)
             {
 					assert(respid);
-					fprintf(GlobalOut, "Proof found on branch %d.\n", i);
+					//fprintf(GlobalOut, "Proof found on branch %d.\n", i);
 					ClauseTableau_p closed_branch = branches[i];
 					TableauSetExtractEntry(closed_branch);
 					closed_branch->open = false;
