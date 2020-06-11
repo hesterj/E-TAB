@@ -42,7 +42,7 @@ void process_branch(ProofState_p proofstate,
 		assert(branches[i]);
 		SilentTimeOut = true;
 		int branch_status = ECloseBranch(proofstate, proofcontrol, branch);
-		printf("%ld processed clauses\n", ProofStateProcCardinality(proofstate));
+		//printf("%ld processed clauses, status %d, branch %p\n", ProofStateProcCardinality(proofstate), branch_status, branch);
 		exit(branch_status);
 	}
 	else if (worker > 0)
@@ -65,12 +65,13 @@ int ECloseBranch(ProofState_p proofstate,
 	assert(proofstate);
 	assert(proofcontrol);
 	long proc_limit = 500;
+	
+	// Collect the clauses of the branch
+	
 	while (node)
 	{
-		//assert(node->set == NULL);
 		if (node != node->master)
 		{
-			//Clause_p label = ClauseCopyFresh(node->label, branch);
 			Clause_p label = node->label;
 			label->weight = ClauseStandardWeight(label);
 			ClauseSetIndexedInsertClause(branch_clauses, label);
@@ -82,11 +83,8 @@ int ECloseBranch(ProofState_p proofstate,
 		node = node->parent;
 	}
 	
-	//printf("# Unprocessed clauses of proofstate:\n");
-	//ClauseSetPrint(GlobalOut, proofstate->unprocessed, true);
-	//printf("\n");
+	// Switch the unprocessed set with branch_clauses, so that the branches are processed first
 	
-	//fprintf(GlobalOut, "# Number of branch axioms: %ld\n", branch_clauses->members);
 	ClauseSetSetProp(branch_clauses, CPInitial);
 	ClauseSetSetProp(branch_clauses, CPLimitedRW);
 	
@@ -100,36 +98,29 @@ int ECloseBranch(ProofState_p proofstate,
 							 LLONG_MAX, LONG_MAX);
 	if (success)
 	{
-		//fprintf(GlobalOut, "Superposition contradiction purely within branch!\n");
+		fprintf(GlobalOut, "Superposition contradiction purely within branch!\n");
 		return PROOF_FOUND;
 	}
+	// Undo the switching so that we can proceed with normal saturation
 	assert(proofstate->unprocessed->members == 0);
 	ClauseSetFree(proofstate->unprocessed);
-	proofstate->unprocessed = NULL;
 	proofstate->axioms = axioms;
 	proofstate->unprocessed = unproc;
 	assert(proofstate->unprocessed);
-	
-	//~ printf("# Number of axioms: %ld\n", proofstate->axioms->members);
-	//~ printf("# Number of unprocessed: %ld\n", proofstate->unprocessed->members);
-	//~ printf("# Number of processed: %ld\n", ProofStateProcCardinality(proofstate));
-	//~ printf("# Depth of branch: %d\n", branch->depth);
-	//~ printf("# tmp store empty? %d\n", ClauseSetEmpty(proofstate->tmp_store));
-	
 	ClauseSetFree(branch_clauses);
+	
 	// Now do normal saturation
-	//fprintf(GlobalOut, "# Saturating branch...\n");
 	success = Saturate(proofstate, proofcontrol, 500,
 							 LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
-	//ClauseSetFree(branch_clauses);
-	//printf("# Exited saturation...\n");
 	if (success)
 	{
 		//fprintf(GlobalOut, "Saturate returned empty clause.\n");
 		//ProofStateStatisticsPrint(GlobalOut, proofstate);
 		return PROOF_FOUND;
 	}
+	//printf("Returning RESOURCE_OUT\n");
+	//ProofStateStatisticsPrint(GlobalOut, proofstate);
 	return RESOURCE_OUT;
 }
 
@@ -146,12 +137,7 @@ int AttemptToCloseBranchesWithSuperposition(BranchSaturation_p jobs)
 	pid_t pool[num_open_branches];
 	int return_status[num_open_branches];
 	
-	//~ printf("Number of open branches: %ld\n", open_branches->members);
-	//~ FILE* debug_graph = fopen("/home/hesterj/Projects/APRTESTING/DOT/debug_graph.dot", "w");
-	//~ ClauseTableauPrintDOTGraphToFile(debug_graph, master);
-	//~ fclose(debug_graph);
-	
-	// Collect the branches in the array
+	// Collect the local branches in an array
 	ClauseTableau_p handle = open_branches->anchor->succ;
 	ClauseTableau_p branches[num_open_branches];
 	for (int i=0; i<num_open_branches; i++)
@@ -171,38 +157,20 @@ int AttemptToCloseBranchesWithSuperposition(BranchSaturation_p jobs)
 	pid_t worker = 0, respid;
 
 	fflush(GlobalOut);
-	// Create new processes and try to close the respective branches with E's saturation
-	//~ #pragma omp parallel num_threads(OMP_NUM_THREADS - 1)
-	//~ {
-		//~ #pragma omp for
-		//~ for (int i=0; i<num_open_branches; i++)
-		//~ {
-			//~ {
-				//~ process_branch(proofstate, proofcontrol, pool, return_status, branches, i);
-			//~ }
-		//~ }
-	//~ }
-	
-	for (int i=0; i<num_open_branches; i++)
-	{
-		#pragma omp task
-		process_branch(proofstate, proofcontrol, pool, return_status, branches, i);
-	}
-	
-	//~ Clause_p core_unsatisfiable = Saturate(proofstate, proofcontrol, 100,
-							 //~ 1000, LONG_MAX, LONG_MAX, LONG_MAX,
-							 //~ LLONG_MAX, LONG_MAX);
-	//~ if (core_unsatisfiable)
-	//~ {
-		//~ fprintf(GlobalOut, "# Contradiction found in proof core outside tableaux.\n");
-		//~ fprintf(GlobalOut, "# SZS status Theorem.\n");
-		//~ exit(0);
-	//~ }
-	
-	// Process any results
 	
 	#pragma omp task
-	 process_saturation_output(pool, return_status, branches, num_open_branches);
+	{
+		for (int i=0; i<num_open_branches; i++)
+		{
+			if (branches[i]) // Branch is local, so we will try to close it
+			{
+				process_branch(proofstate, proofcontrol, pool, return_status, branches, i);
+			}
+		}
+		// Process any results
+		#pragma omp taskwait
+		process_saturation_output(pool, return_status, branches, num_open_branches);
+	}
 	
 	// Exit and return to tableaux proof search
 	return 0;
@@ -235,6 +203,7 @@ int process_saturation_output(pid_t *pool, int *return_status, ClauseTableau_p *
 				}
             if (status == PROOF_FOUND)
             {
+					//printf("Branch %d detected with signal PROOF_FOUND, %d\n", i, status);
 					assert(respid);
 					closed_branch = branches[i];
 					TableauSetExtractEntry(closed_branch);
@@ -262,7 +231,7 @@ int process_saturation_output(pid_t *pool, int *return_status, ClauseTableau_p *
 	}
 	if (successful_count == num_open_branches)
 	{
-		fprintf(GlobalOut, "# All remaining open branches were closed with E.\n");
+		fprintf(GlobalOut, "# All %d remaining open branches were closed with E.\n", successful_count);
 		fprintf(GlobalOut, "# SZS status Theorem\n");
 		ClauseTableauPrintDOTGraph(closed_branch->master);
 		exit(0);
