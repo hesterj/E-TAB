@@ -19,7 +19,7 @@ include Makefile.vars
 
 # Project specific variables
 
-PROJECT  = E
+PROJECT  = Etableau
 
 LIBS     = CONTRIB BASICS INOUT TERMS ORDERINGS CLAUSES PROPOSITIONAL LEARN \
            PCL2 HEURISTICS CONTROL

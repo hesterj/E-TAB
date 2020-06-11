@@ -548,11 +548,15 @@ int main(int argc, char* argv[])
 	{
 		proofstate->tableauoptions = TableauOptions;
 		proofstate->tableaudepth = TableauDepth;
-		srand(time(0));
 		//TB_p tableau_terms = TBAlloc(proofstate->terms->sig);
-		printf("Number of axioms: %ld Number of unprocessed: %ld\n", proofstate->axioms->members, proofstate->unprocessed->members);
-		//ClauseSet_p new_axioms = ClauseSetCopy(tableau_terms, proofstate->axioms);
+		printf("# Number of axioms: %ld Number of unprocessed: %ld\n", proofstate->axioms->members, 
+																						 proofstate->unprocessed->members);
 		ClauseSet_p new_axioms = ClauseSetCopy(proofstate->terms, proofstate->unprocessed);
+		if (ClauseSetEmpty(new_axioms))
+		{
+			ClauseSetFree(new_axioms);
+			new_axioms = ClauseSetCopy(proofstate->terms, proofstate->axioms);
+		}
 		printf("# Tableau proof search.\n");
 		if (TableauBatch == 1)
 		{

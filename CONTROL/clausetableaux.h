@@ -36,7 +36,7 @@ typedef struct clausetableau
 	DStr_p info;
 	PStack_p local_variables; // The variables of the tableau that are local to the branch.
 	
-	//PStack_p spawned_tableaux
+	//PStack_p spawned_tableaux;
 	
 	Clause_p label;
 	ClauseSet_p unit_axioms; // Only present at the master node
@@ -100,6 +100,7 @@ int ClauseTableauAssertCheck(ClauseTableau_p tab);
 bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal);
 bool ClauseTableauIsLeafRegular(ClauseTableau_p tab);
 
+void ClauseTableauPrintDOTGraphToFile(FILE* file, ClauseTableau_p tab);
 void ClauseTableauPrintDOTGraph(ClauseTableau_p tab);
 void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph);
 

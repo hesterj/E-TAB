@@ -108,11 +108,13 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 {
 	assert(proofstate);
 	assert(proofcontrol);
+	assert(active->members > 0);
    problemType = PROBLEM_FO;
    PList_p conjectures = PListAlloc();
    PList_p non_conjectures = PListAlloc();
    //bool conjectures_present = false;
    ClauseSet_p extension_candidates = NULL;
+   fprintf(GlobalOut, "# %ld active clauses before start rule.\n", active->members);
    ClauseSetSplitConjectures(active, conjectures, non_conjectures);
    if (PListEmpty(conjectures))
    {
@@ -136,13 +138,21 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 		}
 		
 	}
+	PListFree(non_conjectures);
+	fprintf(GlobalOut, "# %ld active clauses.  %ld extension candidates.\n", active->members, extension_candidates->members);
    assert(max_depth);
    ClauseSet_p unit_axioms = ClauseSetAlloc();
    
+   #ifndef DNDEBUG
    if (extension_candidates->members == 0) // Should not happen...
    {
-		ClauseSetInsertSet(extension_candidates, unit_axioms);
+		Error("No extension candidates...", 1);
 	}
+	else
+	{
+		fprintf(GlobalOut, "# %ld extension candidates check\n", extension_candidates->members);
+	}
+	#endif
    
    ClauseTableau_p initial_tab = ClauseTableauAlloc();
    ClauseTableau_p resulting_tab = NULL;
@@ -195,9 +205,6 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 		ClauseSetFree(equality_axioms);
 	}
 	ClauseTableauFree(initial_tab);  // Free the  initialization tableau used to make the tableaux with start rule
-	
-	printf("# Start rule applications: %ld\n", distinct_tableaux->members);
-	
 	VarBankPushEnv(bank->vars);
 	PStack_p new_tableaux = PStackAlloc();  // The collection of new tableaux made by extionsion rules.
 	// New tableaux are added to the collection of distinct tableaux when the depth limit is increased, as new
@@ -210,10 +217,15 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
 		assert(extension_candidates);
 		assert(current_depth);
 		assert(new_tableaux);
-		resulting_tab = ConnectionTableauProofSearch(proofstate, proofcontrol, distinct_tableaux, // This is where the magic happens
-													 extension_candidates, 
-													 current_depth,
-													 new_tableaux);
+		int num_max_threads = omp_get_max_threads();
+		#pragma omp parallel num_threads(num_max_threads - 2)
+		{
+			#pragma omp single
+			resulting_tab = ConnectionTableauProofSearch(proofstate, proofcontrol, distinct_tableaux, // This is where the magic happens
+														 extension_candidates, 
+														 current_depth,
+														 new_tableaux);
+		}
 		printf("# Moving %ld tableaux to active set...\n", PStackGetSP(new_tableaux));
 		long num_moved = move_new_tableaux_to_distinct(distinct_tableaux, new_tableaux);
 		if (num_moved == 0) printf("# No new tableaux???\n");
@@ -246,6 +258,7 @@ Clause_p ConnectionTableauBatch(ProofState_p proofstate, ProofControl_p proofcon
    if (resulting_tab) // success
    {
 		printf("Proof search tableau success!\n");
+		ClauseTableauPrintDOTGraph(resulting_tab);
 		Clause_p empty = EmptyClauseAlloc();
 		return empty;
 	}
@@ -343,7 +356,6 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		}
 		else if (number_of_extensions > 0) // If we extended on the open branch with one or more clause, we need to move to a new active tableau.
 		{
-			printf("%ld tab_tmp_store moved to new tableaux...\n", PStackGetSP(tab_tmp_store));
 			PStackPushStack(new_tableaux, tab_tmp_store);
 			break;
 		}
@@ -354,6 +366,5 @@ ClauseTableau_p ConnectionCalculusExtendOpenBranches(ClauseTableau_p active_tabl
 		open_branch = open_branch->succ;
 	}
 	PStackFree(tab_tmp_store);
-	printf("Leaving open branches closure\n");
 	return NULL;
 }

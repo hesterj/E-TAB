@@ -83,10 +83,7 @@ Subst_p ClauseContradictsBranch(ClauseTableau_p tab, Clause_p original_clause)
 	long num_local_variables = UpdateLocalVariables(tab);
 	if (num_local_variables)
 	{
-		//printf("Original clause before substitution of local variables: ");ClausePrint(GlobalOut, original_clause, true);printf("\n");
 		original_clause = ReplaceLocalVariablesWithFresh(tab->master, original_clause, tab->local_variables);
-		//printf("Original clause after substitution of local variables: ");ClausePrint(GlobalOut, original_clause, true);printf("\n");
-		//ClauseTableauPrint(tab->master);
 	}
 	// Check against the unit axioms
 	Clause_p unit_handle = tab->unit_axioms->anchor->succ;

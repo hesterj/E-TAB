@@ -42,6 +42,8 @@ ClauseTableau_p ClauseTableauAlloc()
 	handle->master = handle;
 	handle->parent = NULL;
 	handle->open = true;
+	
+	
 	return handle;
 }
 
@@ -86,6 +88,7 @@ ClauseTableau_p ClauseTableauMasterCopy(ClauseTableau_p tab)
 	handle->master_pred = NULL;
 	handle->master_succ = NULL;
 	handle->active_branch = NULL;
+	handle->saturation_closed = tab->saturation_closed;
 	handle->max_var = tab->max_var;
 	handle->open_branches = TableauSetAlloc();
 	handle->terms = tab->terms;
@@ -148,6 +151,7 @@ ClauseTableau_p ClauseTableauChildCopy(ClauseTableau_p tab, ClauseTableau_p pare
 	handle->terms = parent->terms;
 	handle->mark_int = tab->mark_int;
 	handle->folded_up = tab->folded_up;
+	handle->saturation_closed = tab->saturation_closed;
 	handle->parent = parent;
 	handle->master = parent->master;
 	handle->depth = 1+parent->depth;
@@ -415,94 +419,6 @@ void ClauseTableauApplySubstitutionToNode(ClauseTableau_p tab, Subst_p subst)
 	{
 		ClauseTableauApplySubstitutionToNode(tab->children[i], subst);
 	}
-}
-
-/*-----------------------------------------------------------------------
-//
-// Function: TFormulaNegAlloc()
-//
-//   Return a formula equivalent to ~form. If form is of the form ~f,
-//   return f, otherwise ~form.
-//
-// Global Variables: -
-//
-// Side Effects    : Memory operations
-//
-/----------------------------------------------------------------------*/
-/*
-TFormula_p TFormulaNegAlloc(TB_p terms, TFormula_p form)
-{
-   if(form->f_code == terms->sig->not_code)
-   {
-      return form->args[0];
-   }
-   return TFormulaFCodeAlloc(terms, terms->sig->not_code,
-                             form, NULL);
-}
-*/
-
-/*  Checks if clause directly contradicts another, using a most general unifier. 
- *  If so, return true and APPLY THE SUBSTITUTION USED TO THE ENTIRE TABLEAU (!)
-*/
-
-Subst_p ClauseContradictsClauseOld(ClauseTableau_p tab, Clause_p a, Clause_p b)
-{
-	if (a==b) return NULL;  // Easy case...
-	
-	//printf("Checking ClauseContradictsClause\n");
-	
-	if (ClauseLiteralNumber(a) != 1 || ClauseLiteralNumber(b) != 1) return NULL; //Only interested in unit contradiction
-	
-	TB_p bank = tab->terms;
-	TFormula_p a_neg, b_neg, a_neg_nnf, b_neg_nnf;
-	
-	Subst_p subst;
-	TFormula_p a_tform = TFormulaClauseEncode(tab->terms, a);
-	TFormula_p b_tform = TFormulaClauseEncode(tab->terms, b);
-	
-	a_neg = TFormulaNegAlloc(bank, a_tform);
-	b_neg = TFormulaNegAlloc(bank, b_tform);
-	a_neg_nnf = TFormulaNNF(bank, a_neg, 1);
-	b_neg_nnf = TFormulaNNF(bank, b_neg, 1);
-	
-	a_neg = TermDerefAlways(a_neg);
-	b_neg = TermDerefAlways(b_neg);
-	a_neg_nnf = TermDerefAlways(a_neg_nnf);
-	b_neg_nnf = TermDerefAlways(b_neg_nnf);
-	
-	subst = SubstAlloc();
-
-	if (SubstComputeMgu(a_tform, b_neg_nnf, subst))
-	{
-		printf("# Contradiction: ");
-		ClausePrint(GlobalOut, a, true);
-		printf("   ");
-		ClausePrint(GlobalOut, b, true);
-		printf("\n");
-		if (!PStackGetSP(subst))
-		{
-			return subst;
-		}
-		
-		return subst;
-	}
-	else if (SubstComputeMgu(b_tform, a_neg_nnf, subst))
-	{
-		printf("# Contradiction: ");
-		ClausePrint(GlobalOut, a, true);
-		printf("   ");
-		ClausePrint(GlobalOut, b, true);
-		printf("\n");
-		if (!PStackGetSP(subst))
-		{
-			return subst;
-		}
-		
-		return subst;
-	}
-	SubstDelete(subst);
-	
-	return NULL;
 }
 
 Subst_p ClauseContradictsClause(ClauseTableau_p tab, Clause_p a, Clause_p b)
@@ -1103,6 +1019,12 @@ void TableauMasterSetFree(TableauSet_p set)
 void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 {
 	FILE *dotgraph = fopen("/home/hesterj/Projects/APRTESTING/DOT/graph.dot", "w");
+	ClauseTableauPrintDOTGraphToFile(dotgraph, tab);
+	fclose(dotgraph);
+}
+
+void ClauseTableauPrintDOTGraphToFile(FILE* dotgraph, ClauseTableau_p tab)
+{
 	if (dotgraph == NULL)
 	{
 		printf("# File failure\n");
@@ -1124,6 +1046,16 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 	
 	fprintf(dotgraph,"   %ld [color=Green, label=\"", root_id);
 	ClauseTSTPCorePrint(dotgraph, root_label, true);
+	if (tab->folding_labels)
+	{
+		Clause_p handle = tab->folding_labels->anchor->succ;
+		while (handle != tab->folding_labels->anchor) 
+		{
+			fprintf(dotgraph, "\n");
+			ClauseTSTPCorePrint(dotgraph, handle, true);
+			handle = handle->succ;
+		}
+	}
 	fprintf(dotgraph, " %d\"]\n", folds);
 	
 	for (int i=0; i < tab->arity; i++)
@@ -1133,7 +1065,6 @@ void ClauseTableauPrintDOTGraph(ClauseTableau_p tab)
 		ClauseTableauPrintDOTGraphChildren(child, dotgraph);
 	}
 	fprintf(dotgraph, "\n}");
-	fclose(dotgraph);
 }
 
 void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
@@ -1153,10 +1084,17 @@ void ClauseTableauPrintDOTGraphChildren(ClauseTableau_p tab, FILE* dotgraph)
 	}
 	else
 	{
-		fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
+		if (tab->set == tab->open_branches)
+		{
+			fprintf(dotgraph,"   %ld [color=Blue, shape=box, label=\"", ident);
+		}
+		else
+		{
+			fprintf(dotgraph,"   %ld [color=Blue, label=\"", ident);
+		}
 	}
 	ClauseTSTPCorePrint(dotgraph, label, true);
-	fprintf(dotgraph, " d:%d f:%d s:%d\"]\n", tab->depth, folds, tab->saturation_closed);
+	fprintf(dotgraph, " d:%d f:%d s:%d m:%d fu:%d\"]\n", tab->depth, folds, tab->saturation_closed, tab->mark_int, tab->folded_up);
 	fprintf(dotgraph,"   %ld -> %ld\n", parent_ident, ident);
 	
 	for (int i=0; i < tab->arity; i++)
@@ -1198,7 +1136,7 @@ bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
 	Eqn_p node_literal = label->literals;
 	ClauseTableau_p node = branch;
 	Subst_p subst = SubstAlloc();
-	while (node)
+	while (node != branch->master) // climb the tableau until we hit the root.  do not check root for regularity
 	{
 		label = node->label;
 		node_literal = label->literals;
@@ -1217,8 +1155,8 @@ bool ClauseTableauBranchContainsLiteral(ClauseTableau_p branch, Eqn_p literal)
 		else if (EqnUnify(literal, node_literal, subst))
 		{
 			//~ printf("Potentially irregular extension:\n");
-			//~ EqnPrint(GlobalOut, node_literal, !EqnIsPositive(node_literal), true);printf("\n");
-			//~ EqnPrint(GlobalOut, literal, !EqnIsPositive(literal), true);printf("\n");
+			//~ EqnTSTPPrint(GlobalOut,node_literal , true);printf("\n");
+			//~ EqnTSTPPrint(GlobalOut,literal , true);printf("\n");
 			if (SubstIsRenaming(subst))
 			{
 				//printf("Node clause:\n");

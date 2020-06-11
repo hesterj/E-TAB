@@ -1,10 +1,60 @@
 #include <etableau.h>
 #include <cco_scheduling.h>
+#include <omp.h>
 
 // Forward declaration
 
+int process_saturation_output(pid_t *pool, int *return_status, ClauseTableau_p *branches, int num_open_branches);
+void process_branch(ProofState_p proofstate, 
+						  ProofControl_p proofcontrol, 
+						  pid_t *pool, 
+						  int *return_status, 
+						  ClauseTableau_p *branches, 
+						  int i);
 
 // Function definitions 
+
+BranchSaturation_p BranchSaturationAlloc(ProofState_p proofstate, ProofControl_p proofcontrol, ClauseTableau_p master)
+{
+	BranchSaturation_p branch_sat = BranchSaturationCellAlloc();
+	branch_sat->proofstate = proofstate;
+	branch_sat->proofcontrol = proofcontrol;
+	branch_sat->master = master;
+	return branch_sat;
+}
+
+void BranchSaturationFree(BranchSaturation_p branch_sat)
+{
+	BranchSaturationCellFree(branch_sat);
+}
+
+void process_branch(ProofState_p proofstate, 
+						  ProofControl_p proofcontrol, 
+						  pid_t *pool, 
+						  int *return_status, 
+						  ClauseTableau_p *branches, 
+						  int i)
+{
+	pid_t worker = fork();
+	if (worker == 0) // We are in the child process 
+	{
+		ClauseTableau_p branch = branches[i];
+		assert(branches[i]);
+		SilentTimeOut = true;
+		int branch_status = ECloseBranch(proofstate, proofcontrol, branch);
+		printf("%ld processed clauses\n", ProofStateProcCardinality(proofstate));
+		exit(branch_status);
+	}
+	else if (worker > 0)
+	{
+		pool[i] = worker;
+		return_status[i] = RESOURCE_OUT;
+	}
+	else 
+	{
+		Error("Fork failure", 1);
+	}
+}
 
 int ECloseBranch(ProofState_p proofstate, 
 					  ProofControl_p proofcontrol, 
@@ -69,7 +119,7 @@ int ECloseBranch(ProofState_p proofstate,
 	ClauseSetFree(branch_clauses);
 	// Now do normal saturation
 	//fprintf(GlobalOut, "# Saturating branch...\n");
-	success = Saturate(proofstate, proofcontrol, 100,
+	success = Saturate(proofstate, proofcontrol, 500,
 							 LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
 							 LLONG_MAX, LONG_MAX);
 	//ClauseSetFree(branch_clauses);
@@ -83,17 +133,23 @@ int ECloseBranch(ProofState_p proofstate,
 	return RESOURCE_OUT;
 }
 
-int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate, 
-															ProofControl_p proofcontrol, 
-															ClauseTableau_p master)
+int AttemptToCloseBranchesWithSuperposition(BranchSaturation_p jobs)
 {
-	//ProofState_p proofstate = master->state;
-	//ProofControl_p proofcontrol = master->control;
+	int num_threads = omp_get_num_threads();
+	ProofState_p proofstate = jobs->proofstate;
+	ProofControl_p proofcontrol = jobs->proofcontrol;
+	ClauseTableau_p master = jobs->master;
+	BranchSaturationFree(jobs);
+	
 	TableauSet_p open_branches = master->open_branches;
 	int num_open_branches = (int) open_branches->members;
-	//printf("Attempting to create %d subjobs\n", num_open_branches);
 	pid_t pool[num_open_branches];
 	int return_status[num_open_branches];
+	
+	//~ printf("Number of open branches: %ld\n", open_branches->members);
+	//~ FILE* debug_graph = fopen("/home/hesterj/Projects/APRTESTING/DOT/debug_graph.dot", "w");
+	//~ ClauseTableauPrintDOTGraphToFile(debug_graph, master);
+	//~ fclose(debug_graph);
 	
 	// Collect the branches in the array
 	ClauseTableau_p handle = open_branches->anchor->succ;
@@ -102,60 +158,67 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
 	{
 		assert(handle != master->open_branches->anchor);
 		if (BranchIsLocal(handle)) branches[i] = handle;
-		else branches[i] = NULL;
+		else 
+		{
+			branches[i] = NULL;
+			pool[i] = -1;
+			return_status[i] = RESOURCE_OUT;
+		}
 		handle = handle->succ;
 	}
 	
 	int raw_status = 0, status = OTHER_ERROR;
 	pid_t worker = 0, respid;
-	//printf("Creating %d new processes:\n", num_open_branches);
+
+	fflush(GlobalOut);
 	// Create new processes and try to close the respective branches with E's saturation
+	//~ #pragma omp parallel num_threads(OMP_NUM_THREADS - 1)
+	//~ {
+		//~ #pragma omp for
+		//~ for (int i=0; i<num_open_branches; i++)
+		//~ {
+			//~ {
+				//~ process_branch(proofstate, proofcontrol, pool, return_status, branches, i);
+			//~ }
+		//~ }
+	//~ }
+	
 	for (int i=0; i<num_open_branches; i++)
 	{
-		if (branches[i] == NULL) // If the branch is not local, do not fork.
-		{
-			pool[i] = -1;
-			return_status[i] = RESOURCE_OUT;
-			continue;
-		}
-		fflush(GlobalOut);
-		//double preforktime = GetTotalCPUTime();
-		//printf("Prefork time: %f\n", preforktime);
-		worker = fork();
-		if (worker == 0) // We are in the child process 
-		{
-			// Collect the branch clauses
-			//double current_time = GetTotalCPUTime();
-			//printf("Fork creation time: %f elapsed since\n", current_time);
-			ClauseTableau_p branch = branches[i];
-			assert(branches[i]);
-			SilentTimeOut = true;
-			int branch_status = ECloseBranch(proofstate, proofcontrol, branch);
-			//double total_fork_time = GetTotalCPUTime() - current_time;
-			//printf("Total fork time: %f\n", total_fork_time);
-			exit(branch_status);
-		}
-		else 
-		{
-			pool[i] = worker;
-			return_status[i] = RESOURCE_OUT;
-		}
+		#pragma omp task
+		process_branch(proofstate, proofcontrol, pool, return_status, branches, i);
 	}
-	//printf("# Waiting...\n");
-	Clause_p unsatisfiable = Saturate(proofstate, proofcontrol, 100,
-							 1000, LONG_MAX, LONG_MAX, LONG_MAX,
-							 LLONG_MAX, LONG_MAX);
-	if (unsatisfiable)
-	{
-		fprintf(GlobalOut, "# SZS status Theorem\n");
-	}
+	
+	//~ Clause_p core_unsatisfiable = Saturate(proofstate, proofcontrol, 100,
+							 //~ 1000, LONG_MAX, LONG_MAX, LONG_MAX,
+							 //~ LLONG_MAX, LONG_MAX);
+	//~ if (core_unsatisfiable)
+	//~ {
+		//~ fprintf(GlobalOut, "# Contradiction found in proof core outside tableaux.\n");
+		//~ fprintf(GlobalOut, "# SZS status Theorem.\n");
+		//~ exit(0);
+	//~ }
+	
+	// Process any results
+	
+	#pragma omp task
+	 process_saturation_output(pool, return_status, branches, num_open_branches);
+	
+	// Exit and return to tableaux proof search
+	return 0;
+}
+
+int process_saturation_output(pid_t *pool, int *return_status, ClauseTableau_p *branches, int num_open_branches)
+{
+	int raw_status = 0, status = OTHER_ERROR;
 	int successful_count = 0;
+	ClauseTableau_p closed_branch = NULL;
 	for (int i=0; i<num_open_branches; i++)
 	{
-		respid = -1;
+		pid_t respid = -1;
 		while(respid == -1)
 		{
-			worker = pool[i];
+			pid_t worker = pool[i];
 			if (worker == -1) break;
 			assert(branches[i]);
 			respid = waitpid(worker, &raw_status, 0);
@@ -173,8 +236,7 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
             if (status == PROOF_FOUND)
             {
 					assert(respid);
-					//fprintf(GlobalOut, "Proof found on branch %d.\n", i);
-					ClauseTableau_p closed_branch = branches[i];
+					closed_branch = branches[i];
 					TableauSetExtractEntry(closed_branch);
 					closed_branch->open = false;
 					closed_branch->saturation_closed = true;
@@ -198,16 +260,12 @@ int AttemptToCloseBranchesWithSuperposition(ProofState_p proofstate,
          }
 		}
 	}
-	
-	// Process any results
-	
 	if (successful_count == num_open_branches)
 	{
 		fprintf(GlobalOut, "# All remaining open branches were closed with E.\n");
 		fprintf(GlobalOut, "# SZS status Theorem\n");
-		ClauseTableauPrintDOTGraph(master);
+		ClauseTableauPrintDOTGraph(closed_branch->master);
 		exit(0);
 	}
-	// Exit and return to tableaux proof search
 	return successful_count;
 }

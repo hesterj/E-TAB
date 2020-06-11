@@ -40,7 +40,7 @@ int TmpErrno;
 
 /* The name of the program */
 
-char* ProgName = "Unknown program";
+char* ProgName = "E";
 
 
 /* The empty string as a global, external variable that cannot easily

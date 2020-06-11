@@ -213,6 +213,15 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 			parent->children[p]->open = true;
 		}
 	}
+	
+	// Now that the parent has been extended on, it should be removed from the collection of open leaves.
+	// Important to do this now, as otherwise folding up or branch saturation may not work correctly.
+	
+	if (parent->set)
+	{
+		TableauSetExtractEntry(parent);
+	}
+	
 	//  If this tableau is irregular, we have to undo all of the work.
 	//  This can probably be detected earlier to save
 	//  unnecessary allocations and work.
@@ -237,6 +246,7 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 	if (parent->open_branches->members == 0)
 	{
 		printf("# Closed tableau found?\n");
+		ClauseTableauPrintDOTGraph(parent->master);
 		exit(0);
 	}
 	
@@ -245,18 +255,14 @@ ClauseTableau_p ClauseTableauExtensionRule(TableauSet_p distinct_tableaux,
 	assert(parent->master->control);
 	ProofState_p proofstate = parent->master->state;
 	ProofControl_p proofcontrol = parent->master->control;
-	int num_closed_with_superposition = AttemptToCloseBranchesWithSuperposition(proofstate, proofcontrol, parent->master);
 	
-	//printf("Open branches remaining: %ld\n", parent->open_branches->members);
-	//ClauseTableauPrint(parent->master);
+	BranchSaturation_p branch_saturation = BranchSaturationAlloc(proofstate, proofcontrol, parent->master);
+	// The branch saturation object is freed by AttemptToCloseBranchesWithSuperposition
+	AttemptToCloseBranchesWithSuperposition(branch_saturation);
 	
 	// The parent may have been completely closed and extracted
 	// from the collection of open branches during the foldup close
 	// cycle.
-	if (parent->set)
-	{
-		TableauSetExtractEntry(parent);
-	}
 	
 	assert(number_of_children == parent->arity);
 	assert(parent->arity == number_of_children);
